@@ -21,6 +21,7 @@ const NAV = [
       { label: 'Punto de venta', href: '/dashboard/pos',    icon: '💰', roles: ['admin', 'cajero'] },
       { label: 'Cierre de caja', href: '/dashboard/caja',   icon: '🏧', roles: ['admin', 'cajero'] },
       { label: 'Deudas',         href: '/dashboard/deudas', icon: '📋', roles: ['admin', 'cajero'] },
+      { label: 'Clientes', href: '/dashboard/clientes', icon: '👤', roles: ['admin', 'cajero'] },
     ],
   },
   {

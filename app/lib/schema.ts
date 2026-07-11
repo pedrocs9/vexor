@@ -73,6 +73,7 @@ export const sales = pgTable('sales', {
   id:            serial('id').primaryKey(),
   tenantId:      integer('tenant_id').notNull().references(() => tenants.id),
   userId:        integer('user_id').references(() => users.id),
+  customerId:    integer('customer_id').references(() => customers.id), // ← agrega esta línea
   total:         decimal('total', { precision: 10, scale: 2 }).notNull(),
   discount:      decimal('discount', { precision: 10, scale: 2 }).default('0'),
   paymentMethod: paymentEnum('payment_method').notNull().default('cash'),
@@ -221,3 +222,4 @@ export const debtPayments = pgTable('debt_payments', {
   note:      text('note'),
   createdAt: timestamp('created_at').defaultNow(),
 })
+

@@ -3,6 +3,7 @@
 
 import { useState } from 'react'
 import ImageUpload from './image-upload'
+import ImportProducts from './import-products'
 
 const inputStyle: any = {
   padding: '10px 14px',
@@ -101,6 +102,7 @@ function Modal({ title, onSubmit, onClose, data, onChange, categories, submitLab
       position: 'fixed', inset: 0, zIndex: 200,
       background: 'rgba(0,0,0,0.6)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16,
     }}>
       <div style={{
         background: 'var(--surface)',
@@ -154,6 +156,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
   const [editProduct, setEditProduct] = useState<any>(null)
   const [editForm, setEditForm]       = useState<any>(null)
   const [editLoading, setEditLoading] = useState(false)
+  const [showImport, setShowImport]   = useState(false)
   const [form, setForm] = useState({
     name: '', sku: '', price: '', cost: '',
     stock: '', minStock: '', unit: 'un',
@@ -194,13 +197,13 @@ export default function ProductsClient({ products, categories, tenantId }: {
   return (
     <div>
       {/* Toolbar */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <input
           type="text"
           placeholder="Buscar por nombre o SKU..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ ...inputStyle, maxWidth: 320 }}
+          style={{ ...inputStyle, maxWidth: 300 }}
         />
         <button
           onClick={() => {
@@ -222,6 +225,17 @@ export default function ProductsClient({ products, categories, tenantId }: {
           + Categoría
         </button>
         <button
+          onClick={() => setShowImport(true)}
+          style={{
+            padding: '10px 16px', background: 'transparent',
+            border: '1px solid var(--border)',
+            borderRadius: 8, color: 'var(--muted)',
+            fontSize: 14, cursor: 'pointer',
+          }}
+        >
+          ⬆️ Importar CSV
+        </button>
+        <button
           onClick={() => setShowForm(true)}
           style={{
             padding: '10px 20px', background: 'var(--cyan)',
@@ -238,9 +252,9 @@ export default function ProductsClient({ products, categories, tenantId }: {
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
-        borderRadius: 12, overflow: 'hidden',
+        borderRadius: 12, overflow: 'auto',
       }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
               {['Imagen', 'Nombre', 'SKU', 'Precio', 'Costo', 'Stock', 'Estado', 'Acciones'].map(h => (
@@ -248,7 +262,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
                   padding: '12px 16px', textAlign: 'left',
                   fontSize: 12, fontWeight: 600,
                   color: 'var(--muted)', textTransform: 'uppercase',
-                  letterSpacing: '.06em',
+                  letterSpacing: '.06em', whiteSpace: 'nowrap',
                 }}>
                   {h}
                 </th>
@@ -270,11 +284,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
             ) : filtered.map((p, i) => (
               <tr key={p.id} style={{
                 borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
-                transition: 'background .15s',
-              }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(14,165,233,0.03)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
+              }}>
                 <td style={{ padding: '10px 16px' }}>
                   {p.imageUrl ? (
                     <img src={p.imageUrl} alt={p.name} style={{
@@ -290,16 +300,16 @@ export default function ProductsClient({ products, categories, tenantId }: {
                     }}>📦</div>
                   )}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>
+                <td style={{ padding: '14px 16px', fontSize: 14, color: 'var(--text)', fontWeight: 500, whiteSpace: 'nowrap' }}>
                   {p.name}
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted)' }}>
                   {p.sku ?? '—'}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: 14, color: 'var(--text)' }}>
+                <td style={{ padding: '14px 16px', fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap' }}>
                   ${Number(p.price).toLocaleString('es-CL')}
                 </td>
-                <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted)' }}>
+                <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted)', whiteSpace: 'nowrap' }}>
                   {p.cost ? `$${Number(p.cost).toLocaleString('es-CL')}` : '—'}
                 </td>
                 <td style={{ padding: '14px 16px' }}>
@@ -307,6 +317,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
                     fontSize: 13, fontWeight: 600,
                     color: Number(p.stock) <= Number(p.minStock) && Number(p.minStock) > 0
                       ? 'var(--danger)' : 'var(--success)',
+                    whiteSpace: 'nowrap',
                   }}>
                     {Number(p.stock)} {p.unit}
                   </span>
@@ -342,7 +353,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
                       background: 'transparent',
                       border: '1px solid var(--border)',
                       borderRadius: 6, color: 'var(--muted)',
-                      cursor: 'pointer',
+                      cursor: 'pointer', whiteSpace: 'nowrap',
                     }}
                   >
                     Editar
@@ -354,6 +365,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
         </table>
       </div>
 
+      {/* Modal nuevo producto */}
       {showForm && (
         <Modal
           title="Nuevo producto"
@@ -367,6 +379,7 @@ export default function ProductsClient({ products, categories, tenantId }: {
         />
       )}
 
+      {/* Modal editar producto */}
       {editProduct && editForm && (
         <Modal
           title="Editar producto"
@@ -378,6 +391,38 @@ export default function ProductsClient({ products, categories, tenantId }: {
           submitLabel="Guardar cambios"
           isLoading={editLoading}
         />
+      )}
+
+      {/* Modal importar CSV */}
+      {showImport && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 200,
+          background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 16,
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 16, padding: '28px',
+            width: '100%', maxWidth: 640,
+            maxHeight: '90vh', overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 20, fontWeight: 700, color: 'var(--text)',
+              }}>
+                Importar productos desde CSV
+              </h2>
+              <button onClick={() => setShowImport(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
+            </div>
+            <ImportProducts
+              tenantId={tenantId}
+              onDone={() => { setShowImport(false); window.location.reload() }}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
