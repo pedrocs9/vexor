@@ -163,3 +163,61 @@ export const tenantSettings = pgTable('tenant_settings', {
   website:     text('website'),
   updatedAt:   timestamp('updated_at').defaultNow(),
 })
+
+export const cashClosings = pgTable('cash_closings', {
+  id:           serial('id').primaryKey(),
+  tenantId:     integer('tenant_id').notNull().references(() => tenants.id),
+  userId:       integer('user_id').references(() => users.id),
+  date:         timestamp('date').defaultNow(),
+  cashSales:    decimal('cash_sales',     { precision: 10, scale: 2 }).default('0'),
+  debitSales:   decimal('debit_sales',    { precision: 10, scale: 2 }).default('0'),
+  creditSales:  decimal('credit_sales',   { precision: 10, scale: 2 }).default('0'),
+  transferSales:decimal('transfer_sales', { precision: 10, scale: 2 }).default('0'),
+  totalSales:   decimal('total_sales',    { precision: 10, scale: 2 }).default('0'),
+  cashCounted:  decimal('cash_counted',   { precision: 10, scale: 2 }).default('0'),
+  difference:   decimal('difference',     { precision: 10, scale: 2 }).default('0'),
+  note:         text('note'),
+  status:       text('status').notNull().default('open'),
+})
+
+export const purchaseInvoices = pgTable('purchase_invoices', {
+  id:           serial('id').primaryKey(),
+  tenantId:     integer('tenant_id').notNull().references(() => tenants.id),
+  supplierId:   integer('supplier_id').references(() => suppliers.id),
+  invoiceNumber:text('invoice_number'),
+  date:         timestamp('date').defaultNow(),
+  total:        decimal('total', { precision: 10, scale: 2 }).notNull(),
+  status:       text('status').notNull().default('pending'),
+  note:         text('note'),
+  createdAt:    timestamp('created_at').defaultNow(),
+})
+
+export const purchaseInvoiceItems = pgTable('purchase_invoice_items', {
+  id:        serial('id').primaryKey(),
+  invoiceId: integer('invoice_id').notNull().references(() => purchaseInvoices.id),
+  productId: integer('product_id').references(() => products.id),
+  productName: text('product_name').notNull(),
+  qty:       decimal('qty', { precision: 10, scale: 3 }).notNull(),
+  cost:      decimal('cost', { precision: 10, scale: 2 }).notNull(),
+  subtotal:  decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
+})
+
+export const debts = pgTable('debts', {
+  id:          serial('id').primaryKey(),
+  tenantId:    integer('tenant_id').notNull().references(() => tenants.id),
+  customerId:  integer('customer_id').notNull().references(() => customers.id),
+  saleId:      integer('sale_id').references(() => sales.id),
+  amount:      decimal('amount',  { precision: 10, scale: 2 }).notNull(),
+  paid:        decimal('paid',    { precision: 10, scale: 2 }).notNull().default('0'),
+  balance:     decimal('balance', { precision: 10, scale: 2 }).notNull(),
+  status:      text('status').notNull().default('pending'),
+  createdAt:   timestamp('created_at').defaultNow(),
+})
+
+export const debtPayments = pgTable('debt_payments', {
+  id:        serial('id').primaryKey(),
+  debtId:    integer('debt_id').notNull().references(() => debts.id),
+  amount:    decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  note:      text('note'),
+  createdAt: timestamp('created_at').defaultNow(),
+})
