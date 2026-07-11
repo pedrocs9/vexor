@@ -148,3 +148,18 @@ export const containerMovements = pgTable('container_movements', {
   date:        timestamp('date').defaultNow(),
   note:        text('note'),
 })
+
+export const tenantSettings = pgTable('tenant_settings', {
+  id:          serial('id').primaryKey(),
+  tenantId:    integer('tenant_id').notNull().references(() => tenants.id).unique(),
+  logoUrl:     text('logo_url'),
+  businessName: text('business_name'),
+  rut:         text('rut'),
+  address:     text('address'),
+  phone:       text('phone'),
+  email:       text('email'),
+  commune:     text('commune'),
+  city:        text('city'),
+  website:     text('website'),
+  updatedAt:   timestamp('updated_at').defaultNow(),
+})

@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from '../lib/auth'
 import { redirect } from 'next/navigation'
-import Sidebar from '../components/sidebar'
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import SidebarWrapper from '../components/sidebar-wrapper'
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -12,11 +13,13 @@ export default async function DashboardLayout({
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar user={session.user as any} />
+      <SidebarWrapper user={session.user as any} />
       <main style={{
-        flex: 1, marginLeft: 240,
+        flex: 1,
+        marginLeft: 'var(--sidebar-w, 240px)',
         background: 'var(--bg)',
         minHeight: '100vh',
+        transition: 'margin-left .25s ease',
       }}>
         {children}
       </main>

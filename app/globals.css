@@ -1,20 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --bg:      #0A0F1E;
-  --bg2:     #0D1627;
-  --surface: #111827;
-  --cyan:    #0EA5E9;
-  --cyan-l:  #38BDF8;
-  --border:  rgba(14,165,233,0.14);
-  --border-h:rgba(14,165,233,0.35);
-  --text:    #F8FAFC;
-  --muted:   #64748b;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger:  #ef4444;
+  --bg:       #0A0F1E;
+  --bg2:      #0D1627;
+  --surface:  #111827;
+  --cyan:     #0EA5E9;
+  --cyan-l:   #38BDF8;
+  --border:   rgba(14,165,233,0.14);
+  --border-h: rgba(14,165,233,0.35);
+  --text:     #F8FAFC;
+  --muted:    #64748b;
+  --success:  #10b981;
+  --warning:  #f59e0b;
+  --danger:   #ef4444;
+  --sidebar-w: 240px;
+}
+
+[data-theme="light"] {
+  --bg:       #F8FAFC;
+  --bg2:      #F1F5F9;
+  --surface:  #FFFFFF;
+  --cyan:     #0284C7;
+  --cyan-l:   #0EA5E9;
+  --border:   rgba(0,0,0,0.08);
+  --border-h: rgba(2,132,199,0.35);
+  --text:     #0F172A;
+  --muted:    #64748b;
+  --success:  #059669;
+  --warning:  #d97706;
+  --danger:   #dc2626;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
-body { background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  transition: background .2s, color .2s;
+}
