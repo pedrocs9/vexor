@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { generateReceipt } from "./sale-receipt";
 
 type CartItem = {
   productId: number;
@@ -12,75 +13,280 @@ type CartItem = {
 };
 
 const PAYMENT_METHODS = [
-  { value: "cash",     label: "Efectivo",       icon: "💵" },
-  { value: "debit",    label: "Débito",         icon: "💳" },
-  { value: "credit",   label: "Crédito",        icon: "💳" },
-  { value: "transfer", label: "Transferencia",  icon: "🏦" },
-  { value: "fiado",    label: "Fiado",          icon: "📋" },
+  { value: "cash", label: "Efectivo", icon: "💵" },
+  { value: "debit", label: "Débito", icon: "💳" },
+  { value: "credit", label: "Crédito", icon: "💳" },
+  { value: "transfer", label: "Transferencia", icon: "🏦" },
+  { value: "fiado", label: "Fiado", icon: "📋" },
 ];
 
 // ── Subcomponentes fuera del componente principal ──
 
-function PanelProductos({ products, categories, selectedCat, setSelectedCat, search, setSearch, searchRef, isMobile, addToCart, setShowHistory, loadHistory }: any) {
+function PanelProductos({
+  products,
+  categories,
+  selectedCat,
+  setSelectedCat,
+  search,
+  setSearch,
+  searchRef,
+  isMobile,
+  addToCart,
+  setShowHistory,
+  loadHistory,
+}: any) {
   return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      borderRight: isMobile ? "none" : "1px solid var(--border)",
-      overflow: "hidden",
-      height: isMobile ? "calc(100vh - 56px)" : "100vh",
-    }}>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: "var(--bg2)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        borderRight: isMobile ? "none" : "1px solid var(--border)",
+        overflow: "hidden",
+        height: isMobile ? "calc(100vh - 56px)" : "100vh",
+      }}
+    >
+      <div
+        style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--bg2)",
+        }}
+      >
         <div style={{ position: "relative" }}>
-          <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 16 }}>🔍</span>
+          <span
+            style={{
+              position: "absolute",
+              left: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              fontSize: 16,
+            }}
+          >
+            🔍
+          </span>
           <input
             ref={searchRef}
             type="text"
-            placeholder={isMobile ? "Buscar producto..." : "Buscar por nombre, SKU o escanear... (F2)"}
+            placeholder={
+              isMobile
+                ? "Buscar producto..."
+                : "Buscar por nombre, SKU o escanear... (F2)"
+            }
             value={search}
             onChange={(e: any) => setSearch(e.target.value)}
             autoFocus={!isMobile}
-            style={{ padding: "10px 14px 10px 40px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 14, outline: "none", width: "100%" }}
+            style={{
+              padding: "10px 14px 10px 40px",
+              background: "var(--bg2)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              color: "var(--text)",
+              fontSize: 14,
+              outline: "none",
+              width: "100%",
+            }}
           />
         </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 10, overflowX: "auto", paddingBottom: 4 }}>
-          <button onClick={() => setSelectedCat(null)} style={{ padding: "5px 12px", borderRadius: 100, fontSize: 12, border: "1px solid var(--border)", cursor: "pointer", background: selectedCat === null ? "var(--cyan)" : "transparent", color: selectedCat === null ? "var(--bg)" : "var(--muted)", whiteSpace: "nowrap", flexShrink: 0 }}>Todos</button>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginTop: 10,
+            overflowX: "auto",
+            paddingBottom: 4,
+          }}
+        >
+          <button
+            onClick={() => setSelectedCat(null)}
+            style={{
+              padding: "5px 12px",
+              borderRadius: 100,
+              fontSize: 12,
+              border: "1px solid var(--border)",
+              cursor: "pointer",
+              background: selectedCat === null ? "var(--cyan)" : "transparent",
+              color: selectedCat === null ? "var(--bg)" : "var(--muted)",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            Todos
+          </button>
           {categories.map((cat: any) => (
-            <button key={cat.id} onClick={() => setSelectedCat(cat.id === selectedCat ? null : cat.id)} style={{ padding: "5px 12px", borderRadius: 100, fontSize: 12, border: "1px solid var(--border)", cursor: "pointer", background: selectedCat === cat.id ? "var(--cyan)" : "transparent", color: selectedCat === cat.id ? "var(--bg)" : "var(--muted)", whiteSpace: "nowrap", flexShrink: 0 }}>{cat.name}</button>
+            <button
+              key={cat.id}
+              onClick={() =>
+                setSelectedCat(cat.id === selectedCat ? null : cat.id)
+              }
+              style={{
+                padding: "5px 12px",
+                borderRadius: 100,
+                fontSize: 12,
+                border: "1px solid var(--border)",
+                cursor: "pointer",
+                background:
+                  selectedCat === cat.id ? "var(--cyan)" : "transparent",
+                color: selectedCat === cat.id ? "var(--bg)" : "var(--muted)",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {cat.name}
+            </button>
           ))}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "grid", gridTemplateColumns: isMobile ? "repeat(auto-fill, minmax(130px, 1fr))" : "repeat(auto-fill, minmax(150px, 1fr))", gap: 8, alignContent: "start" }}>
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 12,
+          display: "grid",
+          gridTemplateColumns: isMobile
+            ? "repeat(auto-fill, minmax(130px, 1fr))"
+            : "repeat(auto-fill, minmax(150px, 1fr))",
+          gap: 8,
+          alignContent: "start",
+        }}
+      >
         {products.map((p: any) => (
-          <button key={p.id} onClick={() => addToCart(p)} style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 0, cursor: "pointer", textAlign: "left", overflow: "hidden" }}
-            onMouseEnter={(e: any) => (e.currentTarget.style.borderColor = "var(--cyan)")}
-            onMouseLeave={(e: any) => (e.currentTarget.style.borderColor = "var(--border)")}
-          >
-            {p.imageUrl
-              ? <img src={p.imageUrl} alt={p.name} style={{ width: "100%", height: isMobile ? 70 : 90, objectFit: "cover", display: "block" }} />
-              : <div style={{ width: "100%", height: isMobile ? 70 : 90, background: "var(--bg2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>📦</div>
+          <button
+            key={p.id}
+            onClick={() => addToCart(p)}
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 10,
+              padding: 0,
+              cursor: "pointer",
+              textAlign: "left",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e: any) =>
+              (e.currentTarget.style.borderColor = "var(--cyan)")
             }
+            onMouseLeave={(e: any) =>
+              (e.currentTarget.style.borderColor = "var(--border)")
+            }
+          >
+            {p.imageUrl ? (
+              <img
+                src={p.imageUrl}
+                alt={p.name}
+                style={{
+                  width: "100%",
+                  height: isMobile ? 70 : 90,
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  height: isMobile ? 70 : 90,
+                  background: "var(--bg2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                }}
+              >
+                📦
+              </div>
+            )}
             <div style={{ padding: "8px 10px" }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: "var(--text)", marginBottom: 3, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.name}</p>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "var(--cyan)" }}>${Number(p.price).toLocaleString("es-CL")}</p>
-              <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>Stock: {Number(p.stock)} {p.unit}</p>
+              <p
+                style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "var(--text)",
+                  marginBottom: 3,
+                  lineHeight: 1.3,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
+                {p.name}
+              </p>
+              <p
+                style={{ fontSize: 13, fontWeight: 700, color: "var(--cyan)" }}
+              >
+                ${Number(p.price).toLocaleString("es-CL")}
+              </p>
+              <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+                Stock: {Number(p.stock)} {p.unit}
+              </p>
             </div>
           </button>
         ))}
         {products.length === 0 && (
-          <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "48px", color: "var(--muted)", fontSize: 14 }}>No se encontraron productos</div>
+          <div
+            style={{
+              gridColumn: "1/-1",
+              textAlign: "center",
+              padding: "48px",
+              color: "var(--muted)",
+              fontSize: 14,
+            }}
+          >
+            No se encontraron productos
+          </div>
         )}
       </div>
 
       {!isMobile && (
-        <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", background: "var(--bg2)", display: "flex", gap: 16, alignItems: "center" }}>
-          {[["F2", "Buscar"], ["F4", "Cobrar"], ["ESC", "Limpiar"]].map(([key, label]) => (
+        <div
+          style={{
+            padding: "10px 16px",
+            borderTop: "1px solid var(--border)",
+            background: "var(--bg2)",
+            display: "flex",
+            gap: 16,
+            alignItems: "center",
+          }}
+        >
+          {[
+            ["F2", "Buscar"],
+            ["F4", "Cobrar"],
+            ["ESC", "Limpiar"],
+          ].map(([key, label]) => (
             <span key={key} style={{ fontSize: 12, color: "var(--muted)" }}>
-              <span style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 4, padding: "1px 6px", fontSize: 11, color: "var(--text)", marginRight: 4 }}>{key}</span>
+              <span
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                  padding: "1px 6px",
+                  fontSize: 11,
+                  color: "var(--text)",
+                  marginRight: 4,
+                }}
+              >
+                {key}
+              </span>
               {label}
             </span>
           ))}
-          <button onClick={() => { setShowHistory(true); loadHistory(); }} style={{ marginLeft: "auto", padding: "6px 14px", background: "transparent", border: "1px solid var(--border)", borderRadius: 6, color: "var(--muted)", fontSize: 12, cursor: "pointer" }}>
+          <button
+            onClick={() => {
+              setShowHistory(true);
+              loadHistory();
+            }}
+            style={{
+              marginLeft: "auto",
+              padding: "6px 14px",
+              background: "transparent",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              color: "var(--muted)",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
             📋 Ventas del día
           </button>
         </div>
@@ -89,144 +295,530 @@ function PanelProductos({ products, categories, selectedCat, setSelectedCat, sea
   );
 }
 
-function PanelCarrito({ cart, updateQty, clearCart, customerSearch, setCustomerSearch, filteredCustomers, selectedCustomer, setSelectedCustomer, showCustomerList, setShowCustomerList, showNewCustomer, setShowNewCustomer, newCustomer, setNewCustomer, handleNewCustomer, discount, setDiscount, total, totalWithDiscount, success, isMobile, setShowPayment, setShowHistory, loadHistory }: any) {
-  const inputStyle: any = { padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 14, outline: "none", width: "100%" };
+function PanelCarrito({
+  cart,
+  updateQty,
+  clearCart,
+  customerSearch,
+  setCustomerSearch,
+  filteredCustomers,
+  selectedCustomer,
+  setSelectedCustomer,
+  showCustomerList,
+  setShowCustomerList,
+  showNewCustomer,
+  setShowNewCustomer,
+  newCustomer,
+  setNewCustomer,
+  handleNewCustomer,
+  discount,
+  setDiscount,
+  total,
+  totalWithDiscount,
+  success,
+  isMobile,
+  setShowPayment,
+  setShowHistory,
+  loadHistory,
+}: any) {
+  const inputStyle: any = {
+    padding: "10px 14px",
+    background: "var(--bg2)",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    color: "var(--text)",
+    fontSize: 14,
+    outline: "none",
+    width: "100%",
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", background: "var(--bg2)", overflow: "hidden", height: isMobile ? "calc(100vh - 56px)" : "100vh" }}>
-
-      <div style={{ padding: "14px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--bg2)",
+        overflow: "hidden",
+        height: isMobile ? "calc(100vh - 56px)" : "100vh",
+      }}
+    >
+      <div
+        style={{
+          padding: "14px 16px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 15,
+            fontWeight: 700,
+            color: "var(--text)",
+          }}
+        >
           Carrito {cart.length > 0 && `(${cart.length})`}
         </h2>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {isMobile && (
-            <button onClick={() => { setShowHistory(true); loadHistory(); }} style={{ fontSize: 12, padding: "4px 10px", background: "transparent", border: "1px solid var(--border)", borderRadius: 6, color: "var(--muted)", cursor: "pointer" }}>📋 Ventas</button>
+            <button
+              onClick={() => {
+                setShowHistory(true);
+                loadHistory();
+              }}
+              style={{
+                fontSize: 12,
+                padding: "4px 10px",
+                background: "transparent",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+                color: "var(--muted)",
+                cursor: "pointer",
+              }}
+            >
+              📋 Ventas
+            </button>
           )}
           {cart.length > 0 && (
-            <button onClick={clearCart} style={{ fontSize: 12, color: "var(--danger)", background: "none", border: "none", cursor: "pointer" }}>Limpiar</button>
+            <button
+              onClick={clearCart}
+              style={{
+                fontSize: 12,
+                color: "var(--danger)",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              Limpiar
+            </button>
           )}
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px" }}>
-        {cart.length === 0
-          ? <div style={{ textAlign: "center", padding: "48px 0", color: "var(--muted)", fontSize: 14 }}>Agrega productos al carrito</div>
-          : cart.map((item: any) => (
-            <div key={item.productId} style={{ display: "flex", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)", gap: 8 }}>
+        {cart.length === 0 ? (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "48px 0",
+              color: "var(--muted)",
+              fontSize: 14,
+            }}
+          >
+            Agrega productos al carrito
+          </div>
+        ) : (
+          cart.map((item: any) => (
+            <div
+              key={item.productId}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                padding: "10px 0",
+                borderBottom: "1px solid var(--border)",
+                gap: 8,
+              }}
+            >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</p>
-                <p style={{ fontSize: 12, color: "var(--cyan)" }}>${item.price.toLocaleString("es-CL")} / {item.unit}</p>
+                <p
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--text)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {item.name}
+                </p>
+                <p style={{ fontSize: 12, color: "var(--cyan)" }}>
+                  ${item.price.toLocaleString("es-CL")} / {item.unit}
+                </p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <button onClick={() => updateQty(item.productId, item.qty - 1)} style={{ width: 28, height: 28, borderRadius: 6, background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer", fontSize: 16 }}>−</button>
-                <input type="number" value={item.qty} onChange={(e: any) => updateQty(item.productId, Number(e.target.value))} style={{ width: 40, textAlign: "center", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 13, padding: "4px", outline: "none" }} />
-                <button onClick={() => updateQty(item.productId, item.qty + 1)} style={{ width: 28, height: 28, borderRadius: 6, background: "var(--cyan)", border: "none", color: "var(--bg)", cursor: "pointer", fontSize: 16 }}>+</button>
+                <button
+                  onClick={() => updateQty(item.productId, item.qty - 1)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    color: "var(--text)",
+                    cursor: "pointer",
+                    fontSize: 16,
+                  }}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  value={item.qty}
+                  onChange={(e: any) =>
+                    updateQty(item.productId, Number(e.target.value))
+                  }
+                  style={{
+                    width: 40,
+                    textAlign: "center",
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 6,
+                    color: "var(--text)",
+                    fontSize: 13,
+                    padding: "4px",
+                    outline: "none",
+                  }}
+                />
+                <button
+                  onClick={() => updateQty(item.productId, item.qty + 1)}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: "var(--cyan)",
+                    border: "none",
+                    color: "var(--bg)",
+                    cursor: "pointer",
+                    fontSize: 16,
+                  }}
+                >
+                  +
+                </button>
               </div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", minWidth: 60, textAlign: "right" }}>${(item.price * item.qty).toLocaleString("es-CL")}</p>
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "var(--text)",
+                  minWidth: 60,
+                  textAlign: "right",
+                }}
+              >
+                ${(item.price * item.qty).toLocaleString("es-CL")}
+              </p>
             </div>
           ))
-        }
+        )}
       </div>
 
-      <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)" }}>
-        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>Cliente (opcional)</p>
+      <div
+        style={{ padding: "10px 16px", borderTop: "1px solid var(--border)" }}
+      >
+        <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
+          Cliente (opcional)
+        </p>
         <div style={{ position: "relative" }}>
-          <input type="text" placeholder="Buscar cliente..." value={customerSearch}
-            onChange={(e: any) => { setCustomerSearch(e.target.value); setShowCustomerList(true); if (!e.target.value) setSelectedCustomer(null); }}
-            onFocus={() => setShowCustomerList(true)} style={inputStyle} />
+          <input
+            type="text"
+            placeholder="Buscar cliente..."
+            value={customerSearch}
+            onChange={(e: any) => {
+              setCustomerSearch(e.target.value);
+              setShowCustomerList(true);
+              if (!e.target.value) setSelectedCustomer(null);
+            }}
+            onFocus={() => setShowCustomerList(true)}
+            style={inputStyle}
+          />
           {showCustomerList && customerSearch && (
-            <div style={{ position: "absolute", bottom: "100%", left: 0, right: 0, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8, zIndex: 50, maxHeight: 160, overflowY: "auto", marginBottom: 4 }}>
+            <div
+              style={{
+                position: "absolute",
+                bottom: "100%",
+                left: 0,
+                right: 0,
+                background: "var(--surface)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                zIndex: 50,
+                maxHeight: 160,
+                overflowY: "auto",
+                marginBottom: 4,
+              }}
+            >
               {filteredCustomers.map((c: any) => (
-                <button key={c.id} onClick={() => { setSelectedCustomer(c); setCustomerSearch(c.name); setShowCustomerList(false); }}
-                  style={{ width: "100%", padding: "10px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", color: "var(--text)", fontSize: 13, borderBottom: "1px solid var(--border)" }}>
+                <button
+                  key={c.id}
+                  onClick={() => {
+                    setSelectedCustomer(c);
+                    setCustomerSearch(c.name);
+                    setShowCustomerList(false);
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    textAlign: "left",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "var(--text)",
+                    fontSize: 13,
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                >
                   {c.name} {c.phone && `· ${c.phone}`}
                 </button>
               ))}
-              <button onClick={() => { setShowNewCustomer(true); setShowCustomerList(false); }}
-                style={{ width: "100%", padding: "10px 14px", textAlign: "left", background: "none", border: "none", cursor: "pointer", color: "var(--cyan)", fontSize: 13, fontWeight: 500 }}>
+              <button
+                onClick={() => {
+                  setShowNewCustomer(true);
+                  setShowCustomerList(false);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  textAlign: "left",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--cyan)",
+                  fontSize: 13,
+                  fontWeight: 500,
+                }}
+              >
                 + Registrar &quot;{customerSearch}&quot;
               </button>
             </div>
           )}
         </div>
         {selectedCustomer && (
-          <p style={{ fontSize: 12, color: "var(--success)", marginTop: 6 }}>✓ {selectedCustomer.name}</p>
+          <p style={{ fontSize: 12, color: "var(--success)", marginTop: 6 }}>
+            ✓ {selectedCustomer.name}
+          </p>
         )}
         {showNewCustomer && (
-          <div style={{ marginTop: 8, padding: 12, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 8 }}>
-            <input placeholder="Nombre *" value={newCustomer.name} onChange={(e: any) => setNewCustomer({ ...newCustomer, name: e.target.value })} style={{ ...inputStyle, marginBottom: 6 }} />
-            <input placeholder="Teléfono" value={newCustomer.phone} onChange={(e: any) => setNewCustomer({ ...newCustomer, phone: e.target.value })} style={{ ...inputStyle, marginBottom: 6 }} />
-            <input placeholder="RUT" value={newCustomer.rut} onChange={(e: any) => setNewCustomer({ ...newCustomer, rut: e.target.value })} style={{ ...inputStyle, marginBottom: 8 }} />
+          <div
+            style={{
+              marginTop: 8,
+              padding: 12,
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+            }}
+          >
+            <input
+              placeholder="Nombre *"
+              value={newCustomer.name}
+              onChange={(e: any) =>
+                setNewCustomer({ ...newCustomer, name: e.target.value })
+              }
+              style={{ ...inputStyle, marginBottom: 6 }}
+            />
+            <input
+              placeholder="Teléfono"
+              value={newCustomer.phone}
+              onChange={(e: any) =>
+                setNewCustomer({ ...newCustomer, phone: e.target.value })
+              }
+              style={{ ...inputStyle, marginBottom: 6 }}
+            />
+            <input
+              placeholder="RUT"
+              value={newCustomer.rut}
+              onChange={(e: any) =>
+                setNewCustomer({ ...newCustomer, rut: e.target.value })
+              }
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
             <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => setShowNewCustomer(false)} style={{ flex: 1, padding: "8px", background: "transparent", border: "1px solid var(--border)", borderRadius: 6, color: "var(--muted)", fontSize: 13, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={handleNewCustomer} style={{ flex: 1, padding: "8px", background: "var(--cyan)", color: "var(--bg)", border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Guardar</button>
+              <button
+                onClick={() => setShowNewCustomer(false)}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  color: "var(--muted)",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleNewCustomer}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  background: "var(--cyan)",
+                  color: "var(--bg)",
+                  border: "none",
+                  borderRadius: 6,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Guardar
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+      <div
+        style={{ padding: "10px 16px", borderTop: "1px solid var(--border)" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 6,
+          }}
+        >
           <span style={{ fontSize: 13, color: "var(--muted)" }}>Subtotal</span>
-          <span style={{ fontSize: 13, color: "var(--text)" }}>${total.toLocaleString("es-CL")}</span>
+          <span style={{ fontSize: 13, color: "var(--text)" }}>
+            ${total.toLocaleString("es-CL")}
+          </span>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 8,
+          }}
+        >
           <span style={{ fontSize: 13, color: "var(--muted)" }}>Descuento</span>
-          <input type="number" value={discount || ""} onChange={(e: any) => setDiscount(Number(e.target.value))} placeholder="0"
-            style={{ width: 90, padding: "4px 8px", textAlign: "right", background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, color: "var(--text)", fontSize: 13, outline: "none" }} />
+          <input
+            type="number"
+            value={discount || ""}
+            onChange={(e: any) => setDiscount(Number(e.target.value))}
+            placeholder="0"
+            style={{
+              width: 90,
+              padding: "4px 8px",
+              textAlign: "right",
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              color: "var(--text)",
+              fontSize: 13,
+              outline: "none",
+            }}
+          />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--border)" }}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 700, color: "var(--text)" }}>Total</span>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, color: "var(--cyan)" }}>${totalWithDiscount.toLocaleString("es-CL")}</span>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "8px 0",
+            borderTop: "1px solid var(--border)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 17,
+              fontWeight: 700,
+              color: "var(--text)",
+            }}
+          >
+            Total
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 20,
+              fontWeight: 700,
+              color: "var(--cyan)",
+            }}
+          >
+            ${totalWithDiscount.toLocaleString("es-CL")}
+          </span>
         </div>
       </div>
 
       <div style={{ padding: "10px 16px", paddingBottom: isMobile ? 16 : 20 }}>
-        {success
-          ? <div style={{ padding: "14px", borderRadius: 10, background: "rgba(16,185,129,0.1)", border: "1px solid var(--success)", textAlign: "center", color: "var(--success)", fontSize: 15, fontWeight: 600 }}>✓ Venta registrada</div>
-          : <button onClick={() => setShowPayment(true)} disabled={cart.length === 0} style={{ width: "100%", padding: "14px", background: cart.length === 0 ? "var(--surface)" : "var(--cyan)", color: cart.length === 0 ? "var(--muted)" : "var(--bg)", border: "none", borderRadius: 10, fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, cursor: cart.length === 0 ? "not-allowed" : "pointer" }}>
-              Cobrar ${totalWithDiscount.toLocaleString("es-CL")} {!isMobile && "(F4)"}
-            </button>
-        }
+        {success ? (
+          <div
+            style={{
+              padding: "14px",
+              borderRadius: 10,
+              background: "rgba(16,185,129,0.1)",
+              border: "1px solid var(--success)",
+              textAlign: "center",
+              color: "var(--success)",
+              fontSize: 15,
+              fontWeight: 600,
+            }}
+          >
+            ✓ Venta registrada
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowPayment(true)}
+            disabled={cart.length === 0}
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: cart.length === 0 ? "var(--surface)" : "var(--cyan)",
+              color: cart.length === 0 ? "var(--muted)" : "var(--bg)",
+              border: "none",
+              borderRadius: 10,
+              fontFamily: "var(--font-display)",
+              fontSize: 16,
+              fontWeight: 700,
+              cursor: cart.length === 0 ? "not-allowed" : "pointer",
+            }}
+          >
+            Cobrar ${totalWithDiscount.toLocaleString("es-CL")}{" "}
+            {!isMobile && "(F4)"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
 // ── Componente principal ──
-export default function PosClient({ products, categories, customers, tenantId, userId }: {
-  products:   any[];
+export default function PosClient({
+  products,
+  categories,
+  customers,
+  tenantId,
+  userId,
+}: {
+  products: any[];
   categories: any[];
-  customers:  any[];
-  tenantId:   number;
-  userId:     number;
+  customers: any[];
+  tenantId: number;
+  userId: number;
 }) {
-  const [search, setSearch]                     = useState("");
-  const [cart, setCart]                         = useState<CartItem[]>([]);
-  const [selectedCat, setSelectedCat]           = useState<number | null>(null);
-  const [paymentMethod, setPaymentMethod]       = useState("cash");
-  const [discount, setDiscount]                 = useState(0);
-  const [cashReceived, setCashReceived]         = useState("");
-  const [customerSearch, setCustomerSearch]     = useState("");
+  const [search, setSearch] = useState("");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedCat, setSelectedCat] = useState<number | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [discount, setDiscount] = useState(0);
+  const [cashReceived, setCashReceived] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showCustomerList, setShowCustomerList] = useState(false);
-  const [showNewCustomer, setShowNewCustomer]   = useState(false);
-  const [newCustomer, setNewCustomer]           = useState({ name: "", phone: "", rut: "" });
-  const [showPayment, setShowPayment]           = useState(false);
-  const [loading, setLoading]                   = useState(false);
-  const [success, setSuccess]                   = useState(false);
-  const [showHistory, setShowHistory]           = useState(false);
-  const [todaySales, setTodaySales]             = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory]     = useState(false);
-  const [mobileTab, setMobileTab]               = useState<"products" | "cart">("products");
-  const [isMobile, setIsMobile]                 = useState(false);
-  const searchRef    = useRef<HTMLInputElement>(null);
+  const [showNewCustomer, setShowNewCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    phone: "",
+    rut: "",
+  });
+  const [showPayment, setShowPayment] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [todaySales, setTodaySales] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
+  const [isMobile, setIsMobile] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
   const barcodeTimer = useRef<any>(null);
 
-  const total             = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const totalWithDiscount = total - discount;
-  const change            = Number(cashReceived) - totalWithDiscount;
+  const change = Number(cashReceived) - totalWithDiscount;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -236,7 +828,7 @@ export default function PosClient({ products, categories, customers, tenantId, u
   }, []);
 
   const filteredProducts = products.filter((p) => {
-    const matchCat    = selectedCat ? p.categoryId === selectedCat : true;
+    const matchCat = selectedCat ? p.categoryId === selectedCat : true;
     const matchSearch = search
       ? p.name.toLowerCase().includes(search.toLowerCase()) ||
         (p.barcode && p.barcode.includes(search)) ||
@@ -245,37 +837,63 @@ export default function PosClient({ products, categories, customers, tenantId, u
     return matchCat && matchSearch && p.active;
   });
 
-  const filteredCustomers = customers.filter((c) =>
-    c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-    (c.phone && c.phone.includes(customerSearch))
+  const filteredCustomers = customers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+      (c.phone && c.phone.includes(customerSearch)),
   );
 
-  const addToCart = useCallback((product: any) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.productId === product.id);
-      if (existing) return prev.map((i) => i.productId === product.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { productId: product.id, name: product.name, price: Number(product.price), qty: 1, unit: product.unit }];
-    });
-    setSearch("");
-    if (isMobile) setMobileTab("cart");
-    else searchRef.current?.focus();
-  }, [isMobile]);
+  const addToCart = useCallback(
+    (product: any) => {
+      setCart((prev) => {
+        const existing = prev.find((i) => i.productId === product.id);
+        if (existing)
+          return prev.map((i) =>
+            i.productId === product.id ? { ...i, qty: i.qty + 1 } : i,
+          );
+        return [
+          ...prev,
+          {
+            productId: product.id,
+            name: product.name,
+            price: Number(product.price),
+            qty: 1,
+            unit: product.unit,
+          },
+        ];
+      });
+      setSearch("");
+      if (isMobile) setMobileTab("cart");
+      else searchRef.current?.focus();
+    },
+    [isMobile],
+  );
 
   const updateQty = (productId: number, qty: number) => {
-    if (qty <= 0) setCart((prev) => prev.filter((i) => i.productId !== productId));
-    else setCart((prev) => prev.map((i) => i.productId === productId ? { ...i, qty } : i));
+    if (qty <= 0)
+      setCart((prev) => prev.filter((i) => i.productId !== productId));
+    else
+      setCart((prev) =>
+        prev.map((i) => (i.productId === productId ? { ...i, qty } : i)),
+      );
   };
 
   const clearCart = useCallback(() => {
-    setCart([]); setDiscount(0); setCashReceived("");
-    setSelectedCustomer(null); setCustomerSearch("");
-    setPaymentMethod("cash"); setSuccess(false);
+    setCart([]);
+    setDiscount(0);
+    setCashReceived("");
+    setSelectedCustomer(null);
+    setCustomerSearch("");
+    setPaymentMethod("cash");
+    setSuccess(false);
     if (!isMobile) searchRef.current?.focus();
   }, [isMobile]);
 
   async function loadHistory() {
     setLoadingHistory(true);
-    const data = await fetch(`/api/sales/today?tenantId=${tenantId}`).then(r => r.json());
+    const data = await fetch(`/api/sales/today?tenantId=${tenantId}`).then(
+      (r) => r.json(),
+    );
     setTodaySales(data);
     setLoadingHistory(false);
   }
@@ -283,9 +901,20 @@ export default function PosClient({ products, categories, customers, tenantId, u
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.key === "F2")     { e.preventDefault(); searchRef.current?.focus(); return; }
-      if (e.key === "F4")     { e.preventDefault(); if (cart.length > 0) setShowPayment(true); return; }
-      if (e.key === "Escape") { clearCart(); return; }
+      if (e.key === "F2") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+      if (e.key === "F4") {
+        e.preventDefault();
+        if (cart.length > 0) setShowPayment(true);
+        return;
+      }
+      if (e.key === "Escape") {
+        clearCart();
+        return;
+      }
       if (e.key.length === 1) {
         const timer = barcodeTimer.current;
         clearTimeout(timer);
@@ -310,9 +939,10 @@ export default function PosClient({ products, categories, customers, tenantId, u
   async function handleNewCustomer() {
     if (!newCustomer.name) return;
     const customer = await fetch("/api/customers", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...newCustomer, tenantId }),
-    }).then(r => r.json());
+    }).then((r) => r.json());
     setSelectedCustomer(customer);
     setCustomerSearch(customer.name);
     setShowNewCustomer(false);
@@ -329,8 +959,21 @@ export default function PosClient({ products, categories, customers, tenantId, u
     }
     setLoading(true);
     await fetch("/api/sales", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId, userId, items: cart.map(i => ({ productId: i.productId, qty: i.qty, price: i.price })), total: totalWithDiscount, discount, paymentMethod, customerId: selectedCustomer?.id || null }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tenantId,
+        userId,
+        items: cart.map((i) => ({
+          productId: i.productId,
+          qty: i.qty,
+          price: i.price,
+        })),
+        total: totalWithDiscount,
+        discount,
+        paymentMethod,
+        customerId: selectedCustomer?.id || null,
+      }),
     });
     setLoading(false);
     setSuccess(true);
@@ -338,22 +981,77 @@ export default function PosClient({ products, categories, customers, tenantId, u
     setTimeout(() => clearCart(), 2000);
   }
 
-  const inputStyle: any = { padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--text)", fontSize: 14, outline: "none", width: "100%" };
+  const inputStyle: any = {
+    padding: "10px 14px",
+    background: "var(--bg2)",
+    border: "1px solid var(--border)",
+    borderRadius: 8,
+    color: "var(--text)",
+    fontSize: 14,
+    outline: "none",
+    width: "100%",
+  };
 
   return (
     <div>
       {isMobile && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, display: "flex", borderTop: "1px solid var(--border)", background: "var(--bg2)", height: 56 }}>
-          <button onClick={() => setMobileTab("products")} style={{ flex: 1, padding: "12px", background: mobileTab === "products" ? "var(--cyan)" : "transparent", color: mobileTab === "products" ? "var(--bg)" : "var(--muted)", border: "none", cursor: "pointer", fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600 }}>
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            display: "flex",
+            borderTop: "1px solid var(--border)",
+            background: "var(--bg2)",
+            height: 56,
+          }}
+        >
+          <button
+            onClick={() => setMobileTab("products")}
+            style={{
+              flex: 1,
+              padding: "12px",
+              background:
+                mobileTab === "products" ? "var(--cyan)" : "transparent",
+              color: mobileTab === "products" ? "var(--bg)" : "var(--muted)",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-display)",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
             🛍️ Productos
           </button>
-          <button onClick={() => setMobileTab("cart")} style={{ flex: 1, padding: "12px", background: mobileTab === "cart" ? "var(--cyan)" : "transparent", color: mobileTab === "cart" ? "var(--bg)" : "var(--muted)", border: "none", cursor: "pointer", fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600 }}>
+          <button
+            onClick={() => setMobileTab("cart")}
+            style={{
+              flex: 1,
+              padding: "12px",
+              background: mobileTab === "cart" ? "var(--cyan)" : "transparent",
+              color: mobileTab === "cart" ? "var(--bg)" : "var(--muted)",
+              border: "none",
+              cursor: "pointer",
+              fontFamily: "var(--font-display)",
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
             🛒 {cart.length > 0 ? `Carrito (${cart.length})` : "Carrito"}
           </button>
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 360px", height: isMobile ? "auto" : "100vh", overflow: isMobile ? "visible" : "hidden" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1fr 360px",
+          height: isMobile ? "auto" : "100vh",
+          overflow: isMobile ? "visible" : "hidden",
+        }}
+      >
         {(!isMobile || mobileTab === "products") && (
           <PanelProductos
             products={filteredProducts}
@@ -401,35 +1099,178 @@ export default function PosClient({ products, categories, customers, tenantId, u
 
       {/* Modal pago */}
       {showPayment && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px", width: "100%", maxWidth: 420 }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: "var(--text)", marginBottom: 20 }}>Método de pago</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 300,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: "24px",
+              width: "100%",
+              maxWidth: 420,
+            }}
+          >
+            <h2
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "var(--text)",
+                marginBottom: 20,
+              }}
+            >
+              Método de pago
+            </h2>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
               {PAYMENT_METHODS.map((m, i) => (
-                <button key={i} onClick={() => setPaymentMethod(m.value)} style={{ padding: "10px", borderRadius: 10, border: `1px solid ${paymentMethod === m.value ? "var(--cyan)" : "var(--border)"}`, background: paymentMethod === m.value ? "rgba(14,165,233,0.1)" : "transparent", color: paymentMethod === m.value ? "var(--cyan)" : "var(--muted)", cursor: "pointer", fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 6 }}>
+                <button
+                  key={i}
+                  onClick={() => setPaymentMethod(m.value)}
+                  style={{
+                    padding: "10px",
+                    borderRadius: 10,
+                    border: `1px solid ${paymentMethod === m.value ? "var(--cyan)" : "var(--border)"}`,
+                    background:
+                      paymentMethod === m.value
+                        ? "rgba(14,165,233,0.1)"
+                        : "transparent",
+                    color:
+                      paymentMethod === m.value
+                        ? "var(--cyan)"
+                        : "var(--muted)",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
                   {m.icon} {m.label}
                 </button>
               ))}
             </div>
             {paymentMethod === "cash" && (
               <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>Monto recibido</label>
-                <input type="number" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} placeholder="0" autoFocus style={inputStyle} />
+                <label
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    display: "block",
+                    marginBottom: 6,
+                  }}
+                >
+                  Monto recibido
+                </label>
+                <input
+                  type="number"
+                  value={cashReceived}
+                  onChange={(e) => setCashReceived(e.target.value)}
+                  placeholder="0"
+                  autoFocus
+                  style={inputStyle}
+                />
                 {Number(cashReceived) > 0 && (
-                  <div style={{ marginTop: 10, padding: "10px 14px", background: change >= 0 ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", borderRadius: 8, display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 14, color: "var(--muted)" }}>Vuelto</span>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: change >= 0 ? "var(--success)" : "var(--danger)" }}>${change.toLocaleString("es-CL")}</span>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      padding: "10px 14px",
+                      background:
+                        change >= 0
+                          ? "rgba(16,185,129,0.1)"
+                          : "rgba(239,68,68,0.1)",
+                      borderRadius: 8,
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span style={{ fontSize: 14, color: "var(--muted)" }}>
+                      Vuelto
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: change >= 0 ? "var(--success)" : "var(--danger)",
+                      }}
+                    >
+                      ${change.toLocaleString("es-CL")}
+                    </span>
                   </div>
                 )}
               </div>
             )}
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, padding: "10px 0", borderTop: "1px solid var(--border)" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 16,
+                padding: "10px 0",
+                borderTop: "1px solid var(--border)",
+              }}
+            >
               <span style={{ fontSize: 15, color: "var(--muted)" }}>Total</span>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, color: "var(--cyan)" }}>${totalWithDiscount.toLocaleString("es-CL")}</span>
+              <span
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "var(--cyan)",
+                }}
+              >
+                ${totalWithDiscount.toLocaleString("es-CL")}
+              </span>
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowPayment(false)} style={{ flex: 1, padding: "12px", background: "transparent", border: "1px solid var(--border)", borderRadius: 10, color: "var(--muted)", fontSize: 14, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={handleCheckout} disabled={loading} style={{ flex: 2, padding: "12px", background: "var(--cyan)", color: "var(--bg)", border: "none", borderRadius: 10, fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, cursor: loading ? "wait" : "pointer" }}>
+              <button
+                onClick={() => setShowPayment(false)}
+                style={{
+                  flex: 1,
+                  padding: "12px",
+                  background: "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  color: "var(--muted)",
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCheckout}
+                disabled={loading}
+                style={{
+                  flex: 2,
+                  padding: "12px",
+                  background: "var(--cyan)",
+                  color: "var(--bg)",
+                  border: "none",
+                  borderRadius: 10,
+                  fontFamily: "var(--font-display)",
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: loading ? "wait" : "pointer",
+                }}
+              >
                 {loading ? "Procesando..." : "Confirmar venta"}
               </button>
             </div>
@@ -439,52 +1280,228 @@ export default function PosClient({ products, categories, customers, tenantId, u
 
       {/* Modal historial */}
       {showHistory && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
-          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 16, padding: "24px", width: "100%", maxWidth: 600, maxHeight: "85vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, color: "var(--text)" }}>Ventas del día</h2>
-              <button onClick={() => setShowHistory(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "var(--muted)" }}>✕</button>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 300,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: "24px",
+              width: "100%",
+              maxWidth: 600,
+              maxHeight: "85vh",
+              overflowY: "auto",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 20,
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "var(--text)",
+                }}
+              >
+                Ventas del día
+              </h2>
+              <button
+                onClick={() => setShowHistory(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  fontSize: 20,
+                  cursor: "pointer",
+                  color: "var(--muted)",
+                }}
+              >
+                ✕
+              </button>
             </div>
-            {loadingHistory
-              ? <p style={{ textAlign: "center", color: "var(--muted)", padding: "24px" }}>Cargando...</p>
-              : todaySales.length === 0
-                ? <p style={{ textAlign: "center", color: "var(--muted)", padding: "24px" }}>Aún no hay ventas hoy.</p>
-                : <>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "var(--bg2)", borderRadius: 8, marginBottom: 14 }}>
-                    <span style={{ fontSize: 13, color: "var(--muted)" }}>{todaySales.length} ventas</span>
-                    <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "var(--cyan)" }}>
-                      Total: ${todaySales.reduce((s, sale) => s + Number(sale.total), 0).toLocaleString("es-CL")}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {todaySales.map((sale, i) => (
-                      <div key={i} style={{ background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 14px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                          <span style={{ fontSize: 13, color: "var(--muted)" }}>
-                            {new Date(sale.createdAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
+            {loadingHistory ? (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "var(--muted)",
+                  padding: "24px",
+                }}
+              >
+                Cargando...
+              </p>
+            ) : todaySales.length === 0 ? (
+              <p
+                style={{
+                  textAlign: "center",
+                  color: "var(--muted)",
+                  padding: "24px",
+                }}
+              >
+                Aún no hay ventas hoy.
+              </p>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "10px 14px",
+                    background: "var(--bg2)",
+                    borderRadius: 8,
+                    marginBottom: 14,
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: "var(--muted)" }}>
+                    {todaySales.length} ventas
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      color: "var(--cyan)",
+                    }}
+                  >
+                    Total: $
+                    {todaySales
+                      .reduce((s, sale) => s + Number(sale.total), 0)
+                      .toLocaleString("es-CL")}
+                  </span>
+                </div>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {todaySales.map((sale, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        background: "var(--bg2)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 10,
+                        padding: "12px 14px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <span style={{ fontSize: 13, color: "var(--muted)" }}>
+                          {new Date(sale.createdAt).toLocaleTimeString(
+                            "es-CL",
+                            { hour: "2-digit", minute: "2-digit" },
+                          )}
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 11,
+                              padding: "2px 8px",
+                              borderRadius: 100,
+                              background:
+                                sale.status === "completed"
+                                  ? "rgba(16,185,129,0.1)"
+                                  : "rgba(245,158,11,0.1)",
+                              color:
+                                sale.status === "completed"
+                                  ? "var(--success)"
+                                  : "var(--warning)",
+                            }}
+                          >
+                            {sale.status === "completed"
+                              ? "Completada"
+                              : "Fiado"}
                           </span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 100, background: sale.status === "completed" ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)", color: sale.status === "completed" ? "var(--success)" : "var(--warning)" }}>
-                              {sale.status === "completed" ? "Completada" : "Fiado"}
-                            </span>
-                            <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 700, color: "var(--text)" }}>
-                              ${Number(sale.total).toLocaleString("es-CL")}
-                            </span>
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                          {sale.items.map((item: any, j: number) => (
-                            <div key={j} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--muted)" }}>
-                              <span>{item.productName} × {Number(item.qty).toFixed(1)}</span>
-                              <span>${Number(item.subtotal).toLocaleString("es-CL")}</span>
-                            </div>
-                          ))}
+                          <span
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: 15,
+                              fontWeight: 700,
+                              color: "var(--text)",
+                            }}
+                          >
+                            ${Number(sale.total).toLocaleString("es-CL")}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              const res = await fetch(`/api/sales/${sale.id}`);
+                              const data = await res.json();
+                              await generateReceipt(
+                                data.sale,
+                                data.items,
+                                data.settings,
+                                data.customer,
+                              );
+                            }}
+                            style={{
+                              fontSize: 11,
+                              padding: "3px 8px",
+                              background: "transparent",
+                              border: "1px solid var(--border)",
+                              borderRadius: 6,
+                              color: "var(--muted)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            🖨️ PDF
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </>
-            }
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 3,
+                        }}
+                      >
+                        {sale.items.map((item: any, j: number) => (
+                          <div
+                            key={j}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: 12,
+                              color: "var(--muted)",
+                            }}
+                          >
+                            <span>
+                              {item.productName} × {Number(item.qty).toFixed(1)}
+                            </span>
+                            <span>
+                              ${Number(item.subtotal).toLocaleString("es-CL")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
