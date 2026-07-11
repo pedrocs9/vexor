@@ -223,3 +223,14 @@ export const debtPayments = pgTable('debt_payments', {
   createdAt: timestamp('created_at').defaultNow(),
 })
 
+export const stockAdjustments = pgTable('stock_adjustments', {
+  id:        serial('id').primaryKey(),
+  tenantId:  integer('tenant_id').notNull().references(() => tenants.id),
+  productId: integer('product_id').notNull().references(() => products.id),
+  userId:    integer('user_id').references(() => users.id),
+  type:      text('type').notNull(), // 'add' | 'subtract' | 'set'
+  qty:       decimal('qty', { precision: 10, scale: 3 }).notNull(),
+  reason:    text('reason').notNull(),
+  note:      text('note'),
+  createdAt: timestamp('created_at').defaultNow(),
+})
