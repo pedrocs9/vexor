@@ -9,6 +9,7 @@ export default function ThemeToggle() {
   useEffect(() => {
     const saved = localStorage.getItem('vexor-theme')
     const isDark = saved !== 'light'
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDark(isDark)
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
   }, [])

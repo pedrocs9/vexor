@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const { tenantId, supplierId, invoiceNumber, date, note, items } = await req.json()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const total = items.reduce((s: number, i: any) => s + Number(i.subtotal), 0)
 
     const [invoice] = await db.insert(purchaseInvoices).values({

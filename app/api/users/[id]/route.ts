@@ -12,6 +12,7 @@ export async function PATCH(
     const { id }                       = await params
     const { name, role, active, password } = await req.json()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = { name, role, active }
     if (password) {
       updateData.passwordHash = await bcrypt.hash(password, 10)

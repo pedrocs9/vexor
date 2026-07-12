@@ -234,3 +234,24 @@ export const stockAdjustments = pgTable('stock_adjustments', {
   note:      text('note'),
   createdAt: timestamp('created_at').defaultNow(),
 })
+
+export const tenantModules = pgTable('tenant_modules', {
+  id:        serial('id').primaryKey(),
+  tenantId:  integer('tenant_id').notNull().references(() => tenants.id),
+  module:    text('module').notNull(),
+  active:    boolean('active').notNull().default(true),
+  price:     decimal('price', { precision: 10, scale: 2 }).default('0'),
+  createdAt: timestamp('created_at').defaultNow(),
+})
+
+export const tenantSubscriptions = pgTable('tenant_subscriptions', {
+  id:          serial('id').primaryKey(),
+  tenantId:    integer('tenant_id').notNull().references(() => tenants.id),
+  status:      text('status').notNull().default('active'),
+  basePrice:   decimal('base_price', { precision: 10, scale: 2 }).default('15'),
+  totalPrice:  decimal('total_price', { precision: 10, scale: 2 }).default('15'),
+  billingDay:  integer('billing_day').default(1),
+  nextBilling: timestamp('next_billing'),
+  notes:       text('notes'),
+  createdAt:   timestamp('created_at').defaultNow(),
+})
