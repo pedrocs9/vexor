@@ -1469,6 +1469,26 @@ export default function PosClient({
                           >
                             🖨️ PDF
                           </button>
+                          <button
+                            onClick={async () => {
+                              if (!confirm("¿Eliminar esta venta?")) return;
+                              await fetch(`/api/sales/${sale.id}`, {
+                                method: "DELETE",
+                              });
+                              loadHistory();
+                            }}
+                            style={{
+                              fontSize: 11,
+                              padding: "3px 8px",
+                              background: "transparent",
+                              border: "1px solid var(--border)",
+                              borderRadius: 6,
+                              color: "var(--danger)",
+                              cursor: "pointer",
+                            }}
+                          >
+                            🗑️
+                          </button>
                         </div>
                       </div>
                       <div

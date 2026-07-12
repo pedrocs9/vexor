@@ -7,9 +7,13 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  await db.delete(products).where(eq(products.id, Number(id)))
-  return NextResponse.json({ ok: true })
+  try {
+    const { id } = await params
+    await db.delete(products).where(eq(products.id, Number(id)))
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
+  }
 }
 
 export async function PATCH(
@@ -20,20 +24,20 @@ export async function PATCH(
     const { id } = await params
     const body = await req.json()
 
-    await db.update(products)
-      .set({
-        name:       body.name,
-        sku:        body.sku || null,
-        barcode:    body.barcode || null,
-        price:      body.price,
-        cost:       body.cost || null,
-        stock:      body.stock,
-        minStock:   body.minStock || '0',
-        unit:       body.unit,
-        categoryId: body.categoryId ? Number(body.categoryId) : null,
-        imageUrl:   body.imageUrl || null,
-      })
-      .where(eq(products.id, Number(id)))
+   await db.update(products)
+  .set({
+    name:       body.name,
+    sku:        body.sku || null,
+    barcode:    body.barcode || null,
+    price:      body.price,
+    cost:       body.cost || null,
+    stock:      body.stock,
+    minStock:   body.minStock || '0',
+    unit:       body.unit,
+    categoryId: body.categoryId ? Number(body.categoryId) : null,
+    imageUrl:   body.imageUrl || null,  // ← verifica que esté
+  })
+  .where(eq(products.id, Number(id)))
 
     return NextResponse.json({ ok: true })
   } catch (error) {

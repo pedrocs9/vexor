@@ -43,8 +43,12 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  await db.delete(saleItems).where(eq(saleItems.saleId, Number(id)))
-  await db.delete(sales).where(eq(sales.id, Number(id)))
-  return NextResponse.json({ ok: true })
+  try {
+    const { id } = await params
+    await db.delete(saleItems).where(eq(saleItems.saleId, Number(id)))
+    await db.delete(sales).where(eq(sales.id, Number(id)))
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
+  }
 }

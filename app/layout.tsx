@@ -24,8 +24,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es" className={`${spaceGrotesk.variable} ${inter.variable}`}>
-      <body suppressHydrationWarning style={{ fontFamily: 'var(--font-body)' }}>
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              try {
+                var theme = localStorage.getItem('vexor-theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', theme);
+              } catch(e) {}
+            })();
+          `
+        }} />
+      </head>
+      <body>
         {children}
       </body>
     </html>

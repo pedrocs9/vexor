@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       minStock:   body.minStock || '0',
       unit:       body.unit,
       categoryId: body.categoryId ? Number(body.categoryId) : null,
+      imageUrl:   body.imageUrl || null,
       active:     true,
     })
 

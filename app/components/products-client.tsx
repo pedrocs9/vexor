@@ -647,6 +647,32 @@ export default function ProductsClient({
                       >
                         Stock
                       </button>
+                      <button
+                        onClick={async () => {
+                          if (
+                            !confirm(
+                              `¿Eliminar "${p.name}"? Esta acción no se puede deshacer.`,
+                            )
+                          )
+                            return;
+                          await fetch(`/api/products/${p.id}`, {
+                            method: "DELETE",
+                          });
+                          window.location.reload();
+                        }}
+                        style={{
+                          fontSize: 12,
+                          padding: "4px 10px",
+                          background: "transparent",
+                          border: "1px solid var(--border)",
+                          borderRadius: 6,
+                          color: "var(--danger)",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>
