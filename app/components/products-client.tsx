@@ -4,6 +4,7 @@
 import { useState } from "react";
 import ImageUpload from "./image-upload";
 import ImportProducts from "./import-products";
+import { toast } from './toast'
 
 const inputStyle: any = {
   padding: "10px 14px",
@@ -261,6 +262,9 @@ export default function ProductsClient({
   const [showAdjust, setShowAdjust] = useState(false);
   const [adjustProduct, setAdjustProduct] = useState<any>(null);
   const [adjustLoading, setAdjustLoading] = useState(false);
+  const [filterCategory, setFilterCategory] = useState<string>('')
+const [filterStatus, setFilterStatus]     = useState<string>('active')
+const [filterStock, setFilterStock]       = useState<string>('all')
   const [adjustForm, setAdjustForm] = useState({
     type: "add",
     qty: "",
@@ -280,36 +284,67 @@ export default function ProductsClient({
     imageUrl: "",
   });
 
-  const filtered = products.filter(
-    (p) =>
+  const filtered = products.filter((p) => {
+    const matchSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      (p.sku && p.sku.toLowerCase().includes(search.toLowerCase())),
-  );
+      (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()));
+    const matchCategory = filterCategory
+      ? String(p.categoryId) === filterCategory
+      : true;
+    const matchStatus =
+      filterStatus === "all"
+        ? true
+        : filterStatus === "active"
+          ? p.active
+          : !p.active;
+    const matchStock =
+      filterStock === "all"
+        ? true
+        : filterStock === "low"
+          ? Number(p.stock) <= Number(p.minStock) && Number(p.minStock) > 0
+          : filterStock === "zero"
+            ? Number(p.stock) === 0
+            : true;
+    return matchSearch && matchCategory && matchStatus && matchStock;
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await fetch("/api/products", {
+    const res = await fetch("/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, tenantId }),
     });
     setLoading(false);
-    setShowForm(false);
-    window.location.reload();
+    if (res.ok) {
+      toast("Producto guardado correctamente");
+      setShowForm(false);
+      // refresca los datos sin recargar
+      window.location.reload();
+    } else {
+      toast("Error al guardar producto", "error");
+    }
   }
 
   async function handleEdit(e: React.FormEvent) {
     e.preventDefault();
     setEditLoading(true);
-    await fetch(`/api/products/${editProduct.id}`, {
+    const res = await fetch(`/api/products/${editProduct.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editForm),
     });
     setEditLoading(false);
-    setEditProduct(null);
-    window.location.reload();
+
+    if (res.ok) {
+      toast("Producto editado correctamente");
+      setEditProduct(null);
+      // refresca los datos sin recargar
+      window.location.reload();
+    } else {
+      toast("Error al guardar producto", "error");
+    }
   }
 
   async function handleAdjust(e: React.FormEvent) {
@@ -352,6 +387,54 @@ export default function ProductsClient({
           onChange={(e) => setSearch(e.target.value)}
           style={{ ...inputStyle, maxWidth: 300 }}
         />
+        {/* Filtro por categoría */}
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          style={{ ...inputStyle, maxWidth: 160 }}
+        >
+          <option value="">Todas las categorías</option>
+          {categories.map((c) => (
+            <option key={c.id} value={String(c.id)}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        {/* Filtro por estado */}
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          style={{ ...inputStyle, maxWidth: 140 }}
+        >
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+          <option value="all">Todos</option>
+        </select>
+
+        {/* Filtro por stock */}
+        <select
+          value={filterStock}
+          onChange={(e) => setFilterStock(e.target.value)}
+          style={{ ...inputStyle, maxWidth: 140 }}
+        >
+          <option value="all">Todo el stock</option>
+          <option value="low">Stock bajo</option>
+          <option value="zero">Sin stock</option>
+        </select>
+
+        {/* Contador de resultados */}
+        {filtered.length !== products.length && (
+          <span
+            style={{
+              fontSize: 13,
+              color: "var(--muted)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {filtered.length} de {products.length}
+          </span>
+        )}
         <button
           onClick={() => {
             const name = prompt("Nombre de la categoría:");

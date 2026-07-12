@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '../../../lib/db'
 import { sales, saleItems, products, customers, tenantSettings } from '../../../lib/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 export async function GET(
   req: NextRequest,
@@ -9,7 +9,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-
     const [sale] = await db.select().from(sales).where(eq(sales.id, Number(id)))
     if (!sale) return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
 
@@ -45,8 +44,21 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
+
+    const items = await db.select().from(saleItems)
+      .where(eq(saleItems.saleId, Number(id)))
+
+    for (const item of items) {
+      if (item.productId) {
+        await db.update(products)
+          .set({ stock: sql`stock + ${item.qty}` })
+          .where(eq(products.id, item.productId))
+      }
+    }
+
     await db.delete(saleItems).where(eq(saleItems.saleId, Number(id)))
     await db.delete(sales).where(eq(sales.id, Number(id)))
+
     return NextResponse.json({ ok: true })
   } catch (error) {
     return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })

@@ -2,6 +2,7 @@
 import { auth } from '../lib/auth'
 import { redirect } from 'next/navigation'
 import SidebarWrapper from '../components/sidebar-wrapper'
+import ToastContainer from '../components/toast'
 
 export default async function DashboardLayout({
   children,
@@ -31,6 +32,7 @@ export default async function DashboardLayout({
   `}</style>
         {children}
       </main>
+      <ToastContainer />
     </div>
   );
 }
