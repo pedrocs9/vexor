@@ -6,7 +6,7 @@ import {
 export const roleEnum    = pgEnum('role',    ['admin', 'cajero', 'bodeguero'])
 export const planEnum    = pgEnum('plan',    ['starter', 'pro', 'enterprise'])
 export const statusEnum  = pgEnum('status',  ['active', 'inactive', 'suspended'])
-export const paymentEnum = pgEnum('payment', ['cash', 'debit', 'credit', 'transfer'])
+export const paymentEnum = pgEnum('payment', ['cash', 'debit', 'credit', 'transfer', 'fiado'])
 export const saleEnum    = pgEnum('sale_status', ['completed', 'cancelled', 'credit'])
 export const moveEnum    = pgEnum('move_type', ['out', 'return'])
 
