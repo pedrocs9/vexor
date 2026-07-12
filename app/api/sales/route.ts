@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
    const [sale] = await db.insert(sales).values({
     tenantId,
     userId,
+    customerId:    customerId || null,
     total:         String(total),
     discount:      String(discount || 0),
     paymentMethod,
