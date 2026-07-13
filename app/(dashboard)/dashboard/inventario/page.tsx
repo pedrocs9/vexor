@@ -21,30 +21,10 @@ export default async function InventarioPage() {
   ])
 
   return (
-    <div style={{ padding: '32px 32px' }}>
-      <div style={{
-        display: 'flex', justifyContent: 'space-between',
-        alignItems: 'flex-start', marginBottom: 32,
-      }}>
-        <div>
-          <h1 style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 26, fontWeight: 700,
-            color: 'var(--text)', marginBottom: 4,
-          }}>
-            Inventario
-          </h1>
-          <p style={{ fontSize: 14, color: 'var(--muted)' }}>
-            {allProducts.length} productos registrados
-          </p>
-        </div>
-      </div>
-
-      <ProductsClient
-        products={allProducts}
-        categories={allCategories}
-        tenantId={tenantId}
-      />
-    </div>
+    <ProductsClient
+      products={allProducts}
+      categories={allCategories}
+      tenantId={tenantId}
+    />
   )
 }

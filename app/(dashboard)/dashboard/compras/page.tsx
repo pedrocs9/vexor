@@ -35,18 +35,6 @@ export default async function ComprasPage() {
 
   return (
     <div style={{ padding: '32px' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 26, fontWeight: 700,
-          color: 'var(--text)', marginBottom: 4,
-        }}>
-          Facturas de Compra 🧾
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--muted)' }}>
-          Registro de compras a proveedores — el stock se actualiza automáticamente
-        </p>
-      </div>
       <PurchasesClient
         invoices={invoicesWithItems}
         suppliers={allSuppliers}

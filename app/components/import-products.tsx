@@ -3,6 +3,8 @@
 
 import { useState, useRef } from 'react'
 import Papa from 'papaparse'
+import { notify } from './toast'
+import Button from './ui/button'
 
 export default function ImportProducts({ tenantId, onDone }: {
   tenantId: number
@@ -68,6 +70,11 @@ export default function ImportProducts({ tenantId, onDone }: {
     setResult(data)
     setLoading(false)
     setStep('done')
+    if (data.errors > 0) {
+      notify.warning(`${data.imported} productos importados, ${data.errors} con error`)
+    } else {
+      notify.success(`${data.imported} productos importados correctamente`)
+    }
   }
 
   const inputStyle: any = {
@@ -225,9 +232,9 @@ export default function ImportProducts({ tenantId, onDone }: {
             <button onClick={() => { setStep('upload'); setRows([]); setErrors([]) }} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: 14, cursor: 'pointer' }}>
               ← Volver
             </button>
-            <button onClick={handleImport} disabled={loading || rows.length === 0} style={{ flex: 2, padding: '11px', background: rows.length === 0 ? 'var(--surface)' : 'var(--cyan)', color: rows.length === 0 ? 'var(--muted)' : 'var(--bg)', border: 'none', borderRadius: 8, fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 600, cursor: rows.length === 0 ? 'not-allowed' : 'pointer' }}>
-              {loading ? 'Importando...' : `Importar ${rows.length} productos`}
-            </button>
+            <Button onClick={handleImport} disabled={rows.length === 0} isLoading={loading} loadingText="Importando" variant="primary" style={{ flex: 2 }}>
+              Importar {rows.length} productos
+            </Button>
           </div>
         </div>
       )}

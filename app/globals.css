@@ -14,6 +14,13 @@
   --warning:  #f59e0b;
   --danger:   #ef4444;
   --sidebar-w: 240px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 18px;
+  --control-h: 38px;
+  --focus-ring: 0 0 0 2px var(--cyan-l);
+  --ease-standard: .15s ease;
 }
 
 [data-theme="light"] {
@@ -36,6 +43,310 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--text);
+  font-family: var(--font-body), Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   transition: background .2s, color .2s;
+}
+
+.v-page {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.v-page :where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--cyan-l);
+  outline-offset: 3px;
+}
+
+.v-page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.v-page-header--accent {
+  background:
+    linear-gradient(135deg, rgba(14,165,233,0.10), transparent 42%),
+    var(--surface);
+}
+
+.v-page-header__eyebrow {
+  margin-bottom: 8px;
+  color: var(--cyan-l);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.v-page-header__title {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-size: 30px;
+  line-height: 1.12;
+  font-weight: 800;
+}
+
+.v-page-header__description {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.v-page-header__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.v-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--control-h);
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color var(--ease-standard), color var(--ease-standard), background var(--ease-standard), transform var(--ease-standard);
+}
+
+.v-btn__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: v-spin .7s linear infinite;
+}
+
+@keyframes v-spin {
+  to { transform: rotate(360deg); }
+}
+
+.v-btn:disabled {
+  cursor: wait;
+  opacity: .68;
+}
+
+.v-btn--primary {
+  border-color: transparent;
+  background: var(--cyan);
+  color: var(--bg);
+}
+
+.v-btn--primary:hover {
+  background: var(--cyan-l);
+  transform: translateY(-1px);
+}
+
+.v-btn--secondary {
+  background: transparent;
+  color: var(--text);
+}
+
+.v-btn--ghost {
+  background: transparent;
+  color: var(--muted);
+}
+
+.v-btn--danger {
+  background: transparent;
+  color: var(--danger);
+}
+
+.v-btn--secondary:hover,
+.v-btn--ghost:hover {
+  border-color: var(--border-h);
+  color: var(--cyan-l);
+}
+
+.v-surface {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.v-surface--padded {
+  padding: 18px;
+}
+
+.v-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.v-badge--neutral {
+  background: rgba(100,116,139,0.14);
+  color: var(--muted);
+}
+
+.v-badge--success {
+  background: rgba(16,185,129,0.10);
+  color: var(--success);
+}
+
+.v-badge--warning {
+  background: rgba(245,158,11,0.12);
+  color: var(--warning);
+}
+
+.v-badge--danger {
+  background: rgba(239,68,68,0.11);
+  color: var(--danger);
+}
+
+.v-badge--info {
+  background: rgba(14,165,233,0.12);
+  color: var(--cyan-l);
+}
+
+.v-empty-state {
+  padding: 42px 22px 46px;
+  text-align: center;
+}
+
+.v-empty-state__title {
+  color: var(--text);
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.v-empty-state__description {
+  max-width: 460px;
+  margin: 0 auto 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.v-empty-state__actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.v-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0,0,0,0.66);
+}
+
+.v-modal {
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.v-modal--medium { max-width: 520px; }
+.v-modal--wide { max-width: 720px; }
+
+.v-modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 24px 26px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.v-modal__title {
+  color: var(--text);
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.v-modal__description {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.v-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 26px 26px;
+}
+
+.v-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.v-modal__close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+@media (max-width: 760px) {
+  .v-page {
+    padding: 20px 16px 28px;
+    gap: 18px;
+  }
+
+  .v-page-header {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+
+  .v-page-header__title {
+    font-size: 24px;
+  }
+
+  .v-page-header__actions,
+  .v-page-header__actions .v-btn {
+    width: 100%;
+  }
+
+  .v-modal__header,
+  .v-modal__body {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .v-modal__footer {
+    flex-direction: column-reverse;
+  }
 }

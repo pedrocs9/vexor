@@ -1,11 +1,31 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
+import Badge from './ui/badge'
 
-function SearchModal({ query, setQuery, results, loading, open, onClose, tenantId }: any) {
+function SearchIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height={size}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.9"
+      viewBox="0 0 24 24"
+      width={size}
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  )
+}
+
+function SearchModal({ query, setQuery, results, loading, open, onClose }: any) {
   const inputRef = useRef<HTMLInputElement>(null)
   const router   = useRouter()
 
@@ -23,7 +43,10 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
 
   return createPortal(
     <div
+      aria-label="Busqueda global"
+      aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      role="dialog"
       style={{
         position: 'fixed', inset: 0, zIndex: 99999,
         background: 'rgba(0,0,0,0.65)',
@@ -40,19 +63,18 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
         overflow: 'hidden',
         boxShadow: '0 25px 80px rgba(0,0,0,0.6)',
       }}>
-        {/* Input */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '16px 20px',
           borderBottom: query.length >= 2 ? '1px solid var(--border)' : 'none',
         }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>
-            {loading ? '⏳' : '🔍'}
+          <span style={{ color: loading ? 'var(--warning)' : 'var(--cyan-l)', flexShrink: 0 }}>
+            <SearchIcon size={20} />
           </span>
           <input
             ref={inputRef}
             type="text"
-            placeholder="Buscar productos, clientes..."
+            placeholder="Buscar productos o clientes..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             style={{
@@ -61,34 +83,33 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
               outline: 'none', fontFamily: 'var(--font-body)',
             }}
           />
-          <button onClick={onClose} style={{
-            background: 'var(--bg2)', border: '1px solid var(--border)',
-            borderRadius: 6, color: 'var(--muted)', cursor: 'pointer',
-            fontSize: 11, padding: '3px 8px', flexShrink: 0,
+          <button onClick={onClose} className="v-btn v-btn--ghost" style={{
+            minHeight: 28,
+            fontSize: 11,
+            padding: '3px 8px',
+            flexShrink: 0,
           }}>
             ESC
           </button>
         </div>
 
-        {/* Sin resultados */}
         {open && total === 0 && !loading && query.length >= 2 && (
           <div style={{ padding: '40px 20px', textAlign: 'center' }}>
             <p style={{ fontSize: 15, color: 'var(--muted)', marginBottom: 6 }}>
               Sin resultados para &ldquo;{query}&rdquo;
             </p>
-            <p style={{ fontSize: 13, color: 'var(--muted)', opacity: .6 }}>
-              Intenta con otro nombre, SKU o teléfono
+            <p style={{ fontSize: 13, color: 'var(--muted)', opacity: .7 }}>
+              Intenta con otro nombre, SKU o telefono
             </p>
           </div>
         )}
 
-        {/* Resultados */}
         {open && total > 0 && (
           <div style={{ maxHeight: 380, overflowY: 'auto' }}>
             {results.products?.length > 0 && (
               <>
-                <div style={{ padding: '12px 20px 6px', fontSize: 11, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>
-                  📦 Productos
+                <div style={{ padding: '12px 20px 6px', fontSize: 11, fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                  Productos
                 </div>
                 {results.products.map((p: any) => (
                   <button key={p.id} onClick={() => handleSelect('product')} style={{
@@ -102,26 +123,20 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
                   >
                     {p.imageUrl
                       ? <img src={p.imageUrl} alt={p.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
-                      : <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📦</div>
+                      : <div style={{ width: 40, height: 40, borderRadius: 8, background: 'var(--bg2)', border: '1px solid var(--border)', flexShrink: 0 }} />
                     }
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {p.name}
                       </p>
                       <p style={{ fontSize: 12, color: 'var(--muted)' }}>
-                        ${Number(p.price).toLocaleString('es-CL')} · Stock: {Number(p.stock)} {p.unit}
-                        {p.sku && ` · SKU: ${p.sku}`}
+                        ${Number(p.price).toLocaleString('es-CL')} - Stock: {Number(p.stock)} {p.unit}
+                        {p.sku && ` - SKU: ${p.sku}`}
                       </p>
                     </div>
-                    <span style={{
-                      fontSize: 11, padding: '3px 10px', borderRadius: 100, flexShrink: 0,
-                      background: Number(p.stock) <= Number(p.minStock) && Number(p.minStock) > 0
-                        ? 'rgba(239,68,68,0.1)' : 'rgba(14,165,233,0.1)',
-                      color: Number(p.stock) <= Number(p.minStock) && Number(p.minStock) > 0
-                        ? 'var(--danger)' : 'var(--cyan)',
-                    }}>
+                    <Badge variant={Number(p.stock) <= Number(p.minStock) && Number(p.minStock) > 0 ? 'danger' : 'info'}>
                       {Number(p.stock) <= Number(p.minStock) && Number(p.minStock) > 0 ? 'Stock bajo' : 'Producto'}
-                    </span>
+                    </Badge>
                   </button>
                 ))}
               </>
@@ -130,11 +145,11 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
             {results.customers?.length > 0 && (
               <>
                 <div style={{
-                  padding: '12px 20px 6px', fontSize: 11, fontWeight: 600,
+                  padding: '12px 20px 6px', fontSize: 11, fontWeight: 800,
                   color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.1em',
                   borderTop: results.products?.length > 0 ? '1px solid var(--border)' : 'none',
                 }}>
-                  👤 Clientes
+                  Clientes
                 </div>
                 {results.customers.map((c: any) => (
                   <button key={c.id} onClick={() => handleSelect('customer')} style={{
@@ -147,24 +162,22 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
                     onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                   >
                     <div style={{
-                      width: 40, height: 40, borderRadius: 20, flexShrink: 0,
-                      background: 'linear-gradient(135deg, var(--cyan), #0369a1)',
+                      width: 40, height: 40, borderRadius: 12, flexShrink: 0,
+                      background: 'rgba(14,165,233,0.14)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: 700, color: '#fff',
+                      fontSize: 16, fontWeight: 800, color: 'var(--cyan-l)',
                     }}>
                       {c.name.charAt(0).toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>
                         {c.name}
                       </p>
                       <p style={{ fontSize: 12, color: 'var(--muted)' }}>
-                        {c.phone ?? 'Sin teléfono'}{c.rut && ` · ${c.rut}`}
+                        {c.phone ?? 'Sin telefono'}{c.rut && ` - ${c.rut}`}
                       </p>
                     </div>
-                    <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 100, flexShrink: 0, background: 'rgba(16,185,129,0.1)', color: 'var(--success)' }}>
-                      Cliente
-                    </span>
+                    <Badge variant="success">Cliente</Badge>
                   </button>
                 ))}
               </>
@@ -172,9 +185,8 @@ function SearchModal({ query, setQuery, results, loading, open, onClose, tenantI
           </div>
         )}
 
-        {/* Footer */}
         <div style={{ padding: '10px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: 20, alignItems: 'center' }}>
-          {[['↵', 'Ir a la sección'], ['ESC', 'Cerrar'], ['⌘K', 'Abrir']].map(([key, label]) => (
+          {[['Enter', 'Ir a la seccion'], ['ESC', 'Cerrar'], ['Ctrl K', 'Abrir']].map(([key, label]) => (
             <span key={key} style={{ fontSize: 11, color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
               <kbd style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px', fontSize: 10, fontFamily: 'monospace' }}>
                 {key}
@@ -206,11 +218,18 @@ export default function GlobalSearch({ tenantId, collapsed }: {
   const [mounted, setMounted] = useState(false)
   const timer                 = useRef<any>(null)
 
+  const closeSearch = useCallback(() => {
+    setShowBox(false)
+    setQuery('')
+    setResults({ products: [], customers: [] })
+    setOpen(false)
+  }, [])
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     const handleKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setShowBox(true)
       }
@@ -218,7 +237,7 @@ export default function GlobalSearch({ tenantId, collapsed }: {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [])
+  }, [closeSearch])
 
   useEffect(() => {
     if (query.length < 2) {
@@ -238,37 +257,41 @@ export default function GlobalSearch({ tenantId, collapsed }: {
     }, 300)
   }, [query, tenantId])
 
-  function closeSearch() {
-    setShowBox(false)
-    setQuery('')
-    setResults({ products: [], customers: [] })
-    setOpen(false)
-  }
-
   return (
     <>
       {!collapsed ? (
-        <button onClick={() => setShowBox(true)} style={{
-          width: '100%', padding: '8px 10px',
-          background: 'var(--bg)', border: '1px solid var(--border)',
-          borderRadius: 8, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 8,
-          marginBottom: 8,
-        }}
-          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cyan)')}
-          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+        <button
+          aria-label="Abrir busqueda global"
+          onClick={() => setShowBox(true)}
+          style={{
+            width: '100%', padding: '9px 10px',
+            background: 'var(--bg)', border: '1px solid var(--border)',
+            borderRadius: 10, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 8,
+            color: 'var(--muted)',
+          }}
+          type="button"
         >
-          <span style={{ fontSize: 13 }}>🔍</span>
-          <span style={{ flex: 1, textAlign: 'left', fontSize: 13, color: 'var(--muted)' }}>Buscar...</span>
-          <kbd style={{ fontSize: 10, color: 'var(--muted)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 5px' }}>⌘K</kbd>
+          <SearchIcon size={15} />
+          <span style={{ flex: 1, textAlign: 'left', fontSize: 13 }}>Buscar...</span>
+          <kbd style={{ fontSize: 10, color: 'var(--muted)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 5px' }}>Ctrl K</kbd>
         </button>
       ) : (
-        <button onClick={() => setShowBox(true)} title="Buscar (⌘K)" style={{
-          width: '100%', padding: '9px', background: 'transparent',
-          border: '1px solid var(--border)', borderRadius: 8,
-          cursor: 'pointer', fontSize: 16, marginBottom: 8,
-        }}>
-          🔍
+        <button
+          aria-label="Buscar"
+          className="sidebar-tip"
+          data-tooltip="Buscar"
+          onClick={() => setShowBox(true)}
+          title="Buscar"
+          style={{
+            width: '100%', height: 38, background: 'transparent',
+            border: '1px solid var(--border)', borderRadius: 10,
+            cursor: 'pointer', color: 'var(--muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          type="button"
+        >
+          <SearchIcon />
         </button>
       )}
 
@@ -280,7 +303,6 @@ export default function GlobalSearch({ tenantId, collapsed }: {
           loading={loading}
           open={open}
           onClose={closeSearch}
-          tenantId={tenantId}
         />
       )}
     </>

@@ -2,28 +2,49 @@
 'use client'
 
 import { useState } from 'react'
+import Badge from './ui/badge'
+import Button from './ui/button'
+import EmptyState from './ui/empty-state'
+import Modal from './ui/modal'
+import PageHeader from './ui/page-header'
+import Surface from './ui/surface'
 
 const inputStyle: any = {
   padding: '10px 14px',
   background: 'var(--bg)',
   border: '1px solid var(--border)',
-  borderRadius: 8, color: 'var(--text)',
-  fontSize: 14, outline: 'none', width: '100%',
+  borderRadius: 10,
+  color: 'var(--text)',
+  fontSize: 14,
+  outline: 'none',
+  width: '100%',
 }
 
 const labelStyle: any = {
-  fontSize: 12, color: 'var(--muted)',
-  display: 'block', marginBottom: 6,
+  fontSize: 12,
+  color: 'var(--muted)',
+  display: 'block',
+  marginBottom: 6,
+  fontWeight: 650,
 }
 
 const paymentLabels: any = {
-  cash: 'Efectivo', debit: 'Débito',
-  credit: 'Crédito', transfer: 'Transferencia', fiado: 'Fiado',
+  cash: 'Efectivo', debit: 'Debito',
+  credit: 'Credito', transfer: 'Transferencia', fiado: 'Fiado',
 }
 
-export default function CustomersClient({ customers, tenantId }: {
+function money(value: number) {
+  return `$${Number(value).toLocaleString('es-CL')}`
+}
+
+function DebtBadge({ amount }: { amount: number }) {
+  return amount > 0
+    ? <Badge variant="danger">Con deuda</Badge>
+    : <Badge variant="success">Sin deuda</Badge>
+}
+
+export default function CustomersClient({ customers }: {
   customers: any[]
-  tenantId:  number
 }) {
   const [search, setSearch]               = useState('')
   const [selected, setSelected]           = useState<any>(null)
@@ -40,9 +61,10 @@ export default function CustomersClient({ customers, tenantId }: {
     (c.rut && c.rut.includes(search))
   )
 
-  const totalSpent   = customers.reduce((s, c) => s + c.totalSpent, 0)
   const totalDebt    = customers.reduce((s, c) => s + c.totalDebt, 0)
   const withDebt     = customers.filter(c => c.totalDebt > 0).length
+  const totalSales   = customers.reduce((s, c) => s + c.salesCount, 0)
+  const hasSearch    = search.trim().length > 0
 
   async function loadDetail(customer: any) {
     setSelected(customer)
@@ -68,238 +90,558 @@ export default function CustomersClient({ customers, tenantId }: {
   }
 
   return (
-    <div>
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total clientes',    value: String(customers.length),                    color: 'var(--cyan)' },
-          { label: 'Total facturado',   value: `$${totalSpent.toLocaleString('es-CL')}`,    color: 'var(--success)' },
-          { label: 'Clientes con deuda',value: String(withDebt),                            color: withDebt > 0 ? 'var(--danger)' : 'var(--muted)' },
-        ].map((s, i) => (
-          <div key={i} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px' }}>
-            <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>{s.label}</p>
-            <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</p>
+    <div className="v-page customers-page">
+      <style>{`
+        .customers-summary {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .customer-summary-item {
+          padding: 14px 16px;
+        }
+
+        .customer-summary-label {
+          margin-bottom: 6px;
+          color: var(--muted);
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .customer-summary-value {
+          color: var(--text);
+          font-family: var(--font-display), var(--font-body), sans-serif;
+          font-size: 22px;
+          font-weight: 800;
+        }
+
+        .customer-summary-value.attention { color: var(--danger); }
+
+        .customers-workbar {
+          display: grid;
+          grid-template-columns: minmax(260px, 420px) auto;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .customer-result-count {
+          color: var(--muted);
+          font-size: 13px;
+        }
+
+        .customers-table-wrap { overflow-x: auto; }
+
+        .customers-table {
+          width: 100%;
+          min-width: 920px;
+          border-collapse: collapse;
+        }
+
+        .customers-table th {
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--border);
+          color: var(--muted);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: .06em;
+          text-align: left;
+          text-transform: uppercase;
+          white-space: nowrap;
+        }
+
+        .customers-table td {
+          padding: 14px 16px;
+          border-bottom: 1px solid var(--border);
+          color: var(--muted);
+          font-size: 13px;
+          vertical-align: middle;
+        }
+
+        .customers-table tr:last-child td { border-bottom: 0; }
+
+        .customer-name {
+          color: var(--text);
+          font-size: 14px;
+          font-weight: 800;
+          line-height: 1.3;
+        }
+
+        .customer-meta {
+          margin-top: 4px;
+          color: var(--muted);
+          font-size: 12px;
+        }
+
+        .customer-money {
+          color: var(--text);
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .customer-debt {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          align-items: flex-start;
+        }
+
+        .customer-debt strong {
+          color: var(--text);
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .customer-debt.danger strong { color: var(--danger); }
+
+        .customers-mobile-list { display: none; }
+
+        .customer-mobile-row {
+          padding: 14px;
+          border-top: 1px solid var(--border);
+        }
+
+        .customer-mobile-row:first-child { border-top: 0; }
+
+        .customer-mobile-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+        }
+
+        .customer-mobile-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .mobile-label {
+          color: var(--muted);
+          font-size: 11px;
+          font-weight: 700;
+        }
+
+        .mobile-value {
+          margin-top: 2px;
+          color: var(--text);
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        .customer-mobile-actions {
+          display: flex;
+          justify-content: flex-end;
+          margin-top: 12px;
+        }
+
+        .customer-detail-summary {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .customer-detail-card {
+          padding: 13px 14px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--bg2);
+        }
+
+        .customer-detail-card p:first-child {
+          color: var(--muted);
+          font-size: 11px;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+
+        .customer-detail-card p:last-child {
+          color: var(--text);
+          font-family: var(--font-display), var(--font-body), sans-serif;
+          font-size: 18px;
+          font-weight: 800;
+        }
+
+        .customer-edit-form {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          padding: 14px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--bg2);
+        }
+
+        .customer-edit-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .customer-tabs {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .activity-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .activity-item {
+          padding: 12px 14px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          background: var(--bg2);
+        }
+
+        .activity-head {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          align-items: flex-start;
+          margin-bottom: 8px;
+        }
+
+        .activity-date {
+          color: var(--muted);
+          font-size: 13px;
+        }
+
+        .activity-total {
+          color: var(--text);
+          font-size: 15px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .activity-line {
+          display: flex;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .loading-detail {
+          padding: 28px;
+          color: var(--muted);
+          text-align: center;
+        }
+
+        @media (max-width: 1180px) {
+          .customers-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+          .col-last-sale { display: none; }
+        }
+
+        @media (max-width: 760px) {
+          .customers-summary { grid-template-columns: 1fr 1fr; }
+          .customers-workbar { grid-template-columns: 1fr; }
+          .customers-table-wrap { display: none; }
+          .customers-mobile-list { display: block; }
+          .customer-detail-summary { grid-template-columns: 1fr; }
+          .customer-edit-grid { grid-template-columns: 1fr; }
+          .activity-head { flex-direction: column; }
+        }
+      `}</style>
+
+      <PageHeader
+        context="CRM operativo"
+        title="Clientes"
+        description={`${customers.length} clientes registrados. Busca contactos, revisa deuda pendiente y consulta actividad asociada.`}
+      />
+
+      <section className="customers-summary" aria-label="Resumen de clientes">
+        <Surface padded className="customer-summary-item">
+          <p className="customer-summary-label">Total clientes</p>
+          <p className="customer-summary-value">{customers.length}</p>
+        </Surface>
+        <Surface padded className="customer-summary-item">
+          <p className="customer-summary-label">Clientes con deuda</p>
+          <p className={`customer-summary-value ${withDebt > 0 ? 'attention' : ''}`}>{withDebt}</p>
+        </Surface>
+        <Surface padded className="customer-summary-item">
+          <p className="customer-summary-label">Deuda total</p>
+          <p className={`customer-summary-value ${totalDebt > 0 ? 'attention' : ''}`}>{money(totalDebt)}</p>
+        </Surface>
+        <Surface padded className="customer-summary-item">
+          <p className="customer-summary-label">Compras asociadas</p>
+          <p className="customer-summary-value">{totalSales}</p>
+        </Surface>
+      </section>
+
+      <Surface padded>
+        <div className="customers-workbar">
+          <input
+            type="text"
+            placeholder="Buscar por nombre, telefono o RUT..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={inputStyle}
+            aria-label="Buscar clientes"
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {hasSearch && (
+              <Button type="button" variant="ghost" onClick={() => setSearch('')}>
+                Limpiar busqueda
+              </Button>
+            )}
+            <span className="customer-result-count">{filtered.length} de {customers.length} clientes</span>
           </div>
-        ))}
-      </div>
+        </div>
+      </Surface>
 
-      {/* Búsqueda */}
-      <div style={{ marginBottom: 16 }}>
-        <input
-          type="text" placeholder="Buscar por nombre, teléfono o RUT..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...inputStyle, maxWidth: 380 }}
-        />
-      </div>
+      <Surface aria-label="Listado de clientes">
+        {filtered.length === 0 ? (
+          customers.length === 0 ? (
+            <EmptyState
+              title="Aun no hay clientes"
+              description="Los clientes apareceran aqui cuando se registren desde los flujos existentes del sistema."
+            />
+          ) : (
+            <EmptyState
+              title="No hay coincidencias"
+              description="No encontramos clientes con esa busqueda. Limpia el texto para volver al listado completo."
+              actions={<Button type="button" variant="secondary" onClick={() => setSearch('')}>Limpiar busqueda</Button>}
+            />
+          )
+        ) : (
+          <>
+            <div className="customers-table-wrap">
+              <table className="customers-table">
+                <thead>
+                  <tr>
+                    <th>Cliente</th>
+                    <th>Contacto</th>
+                    <th>Compras</th>
+                    <th>Total gastado</th>
+                    <th>Deuda</th>
+                    <th className="col-last-sale">Ultima compra</th>
+                    <th>Accion</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(c => (
+                    <tr key={c.id}>
+                      <td>
+                        <p className="customer-name">{c.name}</p>
+                        <p className="customer-meta">{c.rut ? `RUT: ${c.rut}` : 'Sin RUT registrado'}</p>
+                      </td>
+                      <td>
+                        <p>{c.phone ?? 'Sin telefono'}</p>
+                      </td>
+                      <td>{c.salesCount}</td>
+                      <td><span className="customer-money">{money(c.totalSpent)}</span></td>
+                      <td>
+                        <div className={`customer-debt ${c.totalDebt > 0 ? 'danger' : ''}`}>
+                          <strong>{money(c.totalDebt)}</strong>
+                          <DebtBadge amount={c.totalDebt} />
+                        </div>
+                      </td>
+                      <td className="col-last-sale">{c.lastSale ? new Date(c.lastSale).toLocaleDateString('es-CL') : '-'}</td>
+                      <td>
+                        <Button type="button" variant="secondary" onClick={() => loadDetail(c)}>
+                          Ver detalle
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-      {/* Tabla */}
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Nombre', 'Teléfono', 'Compras', 'Total gastado', 'Deuda pendiente', 'Última compra', 'Acciones'].map(h => (
-                <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '.06em' }}>{h}</th>
+            <div className="customers-mobile-list">
+              {filtered.map(c => (
+                <article key={c.id} className="customer-mobile-row">
+                  <div className="customer-mobile-head">
+                    <div>
+                      <p className="customer-name">{c.name}</p>
+                      <p className="customer-meta">{c.phone ?? 'Sin telefono'}{c.rut ? ` · RUT: ${c.rut}` : ''}</p>
+                    </div>
+                    <DebtBadge amount={c.totalDebt} />
+                  </div>
+                  <div className="customer-mobile-grid">
+                    <div>
+                      <p className="mobile-label">Compras</p>
+                      <p className="mobile-value">{c.salesCount}</p>
+                    </div>
+                    <div>
+                      <p className="mobile-label">Deuda</p>
+                      <p className="mobile-value">{money(c.totalDebt)}</p>
+                    </div>
+                    <div>
+                      <p className="mobile-label">Total gastado</p>
+                      <p className="mobile-value">{money(c.totalSpent)}</p>
+                    </div>
+                    <div>
+                      <p className="mobile-label">Ultima compra</p>
+                      <p className="mobile-value">{c.lastSale ? new Date(c.lastSale).toLocaleDateString('es-CL') : '-'}</p>
+                    </div>
+                  </div>
+                  <div className="customer-mobile-actions">
+                    <Button type="button" variant="secondary" onClick={() => loadDetail(c)}>
+                      Ver detalle
+                    </Button>
+                  </div>
+                </article>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: '48px', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>
-                {customers.length === 0 ? 'Aún no hay clientes registrados.' : 'No se encontraron clientes.'}
-              </td></tr>
-            ) : filtered.map((c, i) => (
-              <tr key={c.id} style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background .15s', cursor: 'pointer' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(14,165,233,0.03)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
-                <td style={{ padding: '14px 16px', fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{c.name}</td>
-                <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted)' }}>{c.phone ?? '—'}</td>
-                <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted)' }}>{c.salesCount}</td>
-                <td style={{ padding: '14px 16px', fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                  ${c.totalSpent.toLocaleString('es-CL')}
-                </td>
-                <td style={{ padding: '14px 16px' }}>
-                  {c.totalDebt > 0 ? (
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700, color: 'var(--danger)' }}>
-                      ${c.totalDebt.toLocaleString('es-CL')}
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: 12, color: 'var(--success)' }}>✓ Sin deuda</span>
-                  )}
-                </td>
-                <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--muted)' }}>
-                  {c.lastSale ? new Date(c.lastSale).toLocaleDateString('es-CL') : '—'}
-                </td>
-                <td style={{ padding: '14px 16px' }}>
-                  <button onClick={() => loadDetail(c)} style={{ fontSize: 12, padding: '4px 12px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', cursor: 'pointer' }}>
-                    Ver detalle
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </div>
+          </>
+        )}
+      </Surface>
 
-      {/* Modal detalle cliente */}
       {selected && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, padding: '28px', width: '100%', maxWidth: 620, maxHeight: '90vh', overflowY: 'auto' }}>
+        <Modal
+          title={selected.name}
+          description={`${selected.phone ? selected.phone : 'Sin telefono'}${selected.rut ? ` · RUT: ${selected.rut}` : ''}`}
+          onClose={() => { setSelected(null); setDetail(null) }}
+          size="wide"
+          footer={null}
+        >
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => { setEditMode(true); setEditForm({ name: selected.name, phone: selected.phone ?? '', rut: selected.rut ?? '' }) }}
+            >
+              Editar
+            </Button>
+          </div>
 
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          {editMode && (
+            <form onSubmit={handleEdit} className="customer-edit-form">
               <div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                  {selected.name}
-                </h2>
-                <p style={{ fontSize: 13, color: 'var(--muted)' }}>
-                  {selected.phone && `📱 ${selected.phone}`}
-                  {selected.rut && ` · RUT: ${selected.rut}`}
-                </p>
+                <label style={labelStyle}>Nombre *</label>
+                <input required style={inputStyle} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+              </div>
+              <div className="customer-edit-grid">
+                <div>
+                  <label style={labelStyle}>Telefono</label>
+                  <input style={inputStyle} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                </div>
+                <div>
+                  <label style={labelStyle}>RUT</label>
+                  <input style={inputStyle} value={editForm.rut} onChange={e => setEditForm({ ...editForm, rut: e.target.value })} />
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { setEditMode(true); setEditForm({ name: selected.name, phone: selected.phone ?? '', rut: selected.rut ?? '' }) }}
-                  style={{ fontSize: 12, padding: '6px 12px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--muted)', cursor: 'pointer' }}>
-                  Editar
-                </button>
-                <button onClick={() => { setSelected(null); setDetail(null) }}
-                  style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--muted)' }}>✕</button>
+                <Button type="button" variant="secondary" onClick={() => setEditMode(false)}>Cancelar</Button>
+                <Button type="submit" variant="primary" disabled={editLoading}>
+                  {editLoading ? 'Guardando...' : 'Guardar'}
+                </Button>
               </div>
+            </form>
+          )}
+
+          <div className="customer-detail-summary">
+            <div className="customer-detail-card">
+              <p>Total compras</p>
+              <p>{selected.salesCount}</p>
             </div>
-
-            {/* Editar */}
-            {editMode && (
-              <form onSubmit={handleEdit} style={{ background: 'var(--bg2)', borderRadius: 10, padding: 16, marginBottom: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <div>
-                  <label style={labelStyle}>Nombre *</label>
-                  <input required style={inputStyle} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <div>
-                    <label style={labelStyle}>Teléfono</label>
-                    <input style={inputStyle} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>RUT</label>
-                    <input style={inputStyle} value={editForm.rut} onChange={e => setEditForm({ ...editForm, rut: e.target.value })} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => setEditMode(false)} style={{ flex: 1, padding: '9px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
-                  <button type="submit" disabled={editLoading} style={{ flex: 1, padding: '9px', background: 'var(--cyan)', color: 'var(--bg)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                    {editLoading ? 'Guardando...' : 'Guardar'}
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Stats del cliente */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
-              {[
-                { label: 'Total compras',  value: String(selected.salesCount),                       color: 'var(--text)' },
-                { label: 'Total gastado',  value: `$${selected.totalSpent.toLocaleString('es-CL')}`, color: 'var(--success)' },
-                { label: 'Deuda pendiente',value: `$${selected.totalDebt.toLocaleString('es-CL')}`,  color: selected.totalDebt > 0 ? 'var(--danger)' : 'var(--success)' },
-              ].map((s, i) => (
-                <div key={i} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{s.label}</p>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: s.color }}>{s.value}</p>
-                </div>
-              ))}
+            <div className="customer-detail-card">
+              <p>Total gastado</p>
+              <p>{money(selected.totalSpent)}</p>
             </div>
-
-            {/* Tabs */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {(['sales', 'debts'] as const).map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                  padding: '7px 16px', borderRadius: 8, fontSize: 13,
-                  border: '1px solid var(--border)', cursor: 'pointer',
-                  background: activeTab === tab ? 'var(--cyan)' : 'transparent',
-                  color:      activeTab === tab ? 'var(--bg)'  : 'var(--muted)',
-                  fontWeight: activeTab === tab ? 600 : 400,
-                }}>
-                  {tab === 'sales' ? '🧾 Compras' : '📋 Deudas'}
-                </button>
-              ))}
+            <div className="customer-detail-card">
+              <p>Deuda pendiente</p>
+              <p style={{ color: selected.totalDebt > 0 ? 'var(--danger)' : 'var(--success)' }}>{money(selected.totalDebt)}</p>
             </div>
+          </div>
 
-            {loadingDetail ? (
-              <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '24px' }}>Cargando...</p>
-            ) : detail && (
-              <>
-                {activeTab === 'sales' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {detail.sales.length === 0
-                      ? <p style={{ fontSize: 14, color: 'var(--muted)', textAlign: 'center', padding: '24px' }}>Sin compras registradas.</p>
-                      : detail.sales.map((sale: any, i: number) => (
-                        <div key={i} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-                              {new Date(sale.createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 100, background: 'rgba(14,165,233,0.1)', color: 'var(--cyan)' }}>
-                                {paymentLabels[sale.paymentMethod] ?? sale.paymentMethod}
-                              </span>
-                              <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                                ${Number(sale.total).toLocaleString('es-CL')}
-                              </span>
-                            </div>
+          <div className="customer-tabs">
+            {(['sales', 'debts'] as const).map(tab => (
+              <Button
+                key={tab}
+                type="button"
+                variant={activeTab === tab ? 'primary' : 'secondary'}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab === 'sales' ? 'Compras' : 'Deudas'}
+              </Button>
+            ))}
+          </div>
+
+          {loadingDetail ? (
+            <p className="loading-detail">Cargando detalle...</p>
+          ) : detail && (
+            <>
+              {activeTab === 'sales' && (
+                detail.sales.length === 0 ? (
+                  <EmptyState
+                    title="Sin compras registradas"
+                    description="Este cliente aun no tiene compras asociadas."
+                  />
+                ) : (
+                  <div className="activity-list">
+                    {detail.sales.map((sale: any, i: number) => (
+                      <div key={i} className="activity-item">
+                        <div className="activity-head">
+                          <span className="activity-date">
+                            {new Date(sale.createdAt).toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <Badge variant="info">{paymentLabels[sale.paymentMethod] ?? sale.paymentMethod}</Badge>
+                            <span className="activity-total">{money(Number(sale.total))}</span>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {sale.items.map((item: any, j: number) => (
-                              <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--muted)' }}>
-                                <span>{item.productName} × {Number(item.qty).toFixed(1)}</span>
-                                <span>${Number(item.subtotal).toLocaleString('es-CL')}</span>
+                        </div>
+                        {sale.items.map((item: any, j: number) => (
+                          <div key={j} className="activity-line">
+                            <span>{item.productName} x {Number(item.qty).toFixed(1)}</span>
+                            <span>{money(Number(item.subtotal))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+
+              {activeTab === 'debts' && (
+                detail.debts.length === 0 ? (
+                  <EmptyState
+                    title="Sin deudas pendientes"
+                    description="Este cliente no registra deudas asociadas."
+                  />
+                ) : (
+                  <div className="activity-list">
+                    {detail.debts.map((debt: any, i: number) => (
+                      <div key={i} className="activity-item" style={{ borderColor: debt.status === 'pending' ? 'rgba(239,68,68,0.3)' : 'var(--border)' }}>
+                        <div className="activity-head">
+                          <span className="activity-date">{new Date(debt.createdAt).toLocaleDateString('es-CL')}</span>
+                          <Badge variant={debt.status === 'paid' ? 'success' : 'danger'}>
+                            {debt.status === 'paid' ? 'Pagada' : 'Pendiente'}
+                          </Badge>
+                        </div>
+                        <div className="activity-line">
+                          <span>Total: {money(Number(debt.amount))}</span>
+                          <span>Pagado: {money(Number(debt.paid))}</span>
+                          <strong style={{ color: debt.status === 'paid' ? 'var(--success)' : 'var(--danger)' }}>
+                            Saldo: {money(Number(debt.balance))}
+                          </strong>
+                        </div>
+                        {debt.payments.length > 0 && (
+                          <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+                            <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Abonos:</p>
+                            {debt.payments.map((p: any, j: number) => (
+                              <div key={j} className="activity-line">
+                                <span>{new Date(p.createdAt).toLocaleDateString('es-CL')}</span>
+                                <span style={{ color: 'var(--success)' }}>+{money(Number(p.amount))}</span>
                               </div>
                             ))}
                           </div>
-                        </div>
-                      ))
-                    }
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {activeTab === 'debts' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {detail.debts.length === 0
-                      ? <p style={{ fontSize: 14, color: 'var(--muted)', textAlign: 'center', padding: '24px' }}>Sin deudas registradas.</p>
-                      : detail.debts.map((debt: any, i: number) => (
-                        <div key={i} style={{ background: 'var(--bg2)', border: `1px solid ${debt.status === 'pending' ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`, borderRadius: 10, padding: '12px 14px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <span style={{ fontSize: 13, color: 'var(--muted)' }}>
-                              {new Date(debt.createdAt).toLocaleDateString('es-CL')}
-                            </span>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 100, background: debt.status === 'paid' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', color: debt.status === 'paid' ? 'var(--success)' : 'var(--danger)' }}>
-                              {debt.status === 'paid' ? 'Pagada' : 'Pendiente'}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                            <span style={{ color: 'var(--muted)' }}>Total: ${Number(debt.amount).toLocaleString('es-CL')}</span>
-                            <span style={{ color: 'var(--muted)' }}>Pagado: ${Number(debt.paid).toLocaleString('es-CL')}</span>
-                            <span style={{ fontWeight: 700, color: debt.status === 'paid' ? 'var(--success)' : 'var(--danger)' }}>
-                              Saldo: ${Number(debt.balance).toLocaleString('es-CL')}
-                            </span>
-                          </div>
-                          {debt.payments.length > 0 && (
-                            <div style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
-                              <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Abonos:</p>
-                              {debt.payments.map((p: any, j: number) => (
-                                <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--success)' }}>
-                                  <span>{new Date(p.createdAt).toLocaleDateString('es-CL')}</span>
-                                  <span>+${Number(p.amount).toLocaleString('es-CL')}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    }
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
+                )
+              )}
+            </>
+          )}
+        </Modal>
       )}
     </div>
   )

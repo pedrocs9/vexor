@@ -40,24 +40,5 @@ export default async function ClientesPage() {
     }
   })
 
-  return (
-    <div style={{ padding: '32px' }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: 26, fontWeight: 700,
-          color: 'var(--text)', marginBottom: 4,
-        }}>
-          Clientes 👥
-        </h1>
-        <p style={{ fontSize: 14, color: 'var(--muted)' }}>
-          {allCustomers.length} clientes registrados
-        </p>
-      </div>
-      <CustomersClient
-        customers={customersWithStats}
-        tenantId={tenantId}
-      />
-    </div>
-  )
+  return <CustomersClient customers={customersWithStats} />
 }

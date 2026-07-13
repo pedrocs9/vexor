@@ -1,18 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Sidebar from './sidebar'
 
+function MenuIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      fill="none"
+      height="20"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.9"
+      viewBox="0 0 24 24"
+      width="20"
+    >
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  )
+}
+
 export default function SidebarWrapper({ user }: { user: any }) {
-  const [open, setOpen]   = useState(true)
+  const [open, setOpen]     = useState(true)
   const [mobile, setMobile] = useState(false)
 
   const setMargin = (isOpen: boolean, isMobile: boolean) => {
     if (isMobile) {
       document.documentElement.style.setProperty('--sidebar-w', '0px')
     } else {
-      document.documentElement.style.setProperty('--sidebar-w', isOpen ? '240px' : '64px')
+      document.documentElement.style.setProperty('--sidebar-w', isOpen ? '252px' : '68px')
     }
   }
 
@@ -29,23 +47,41 @@ export default function SidebarWrapper({ user }: { user: any }) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
+  useEffect(() => {
+    document.body.style.overflow = mobile && open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [mobile, open])
+
   function handleToggle() {
     const next = !open
     setOpen(next)
     setMargin(next, mobile)
   }
 
+  function closeMobile() {
+    if (!mobile) return
+    setOpen(false)
+    setMargin(false, true)
+  }
+
   return (
     <>
-      {/* Overlay mobile */}
       {mobile && open && (
-        <div
-          onClick={() => { setOpen(false); setMargin(false, true) }}
-          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.5)' }}
+        <button
+          aria-label="Cerrar navegacion"
+          onClick={closeMobile}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 40,
+            background: 'rgba(0,0,0,0.58)',
+            border: 0,
+            cursor: 'default',
+          }}
+          type="button"
         />
       )}
 
-      {/* Header mobile fijo */}
       {mobile && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 39,
@@ -55,37 +91,55 @@ export default function SidebarWrapper({ user }: { user: any }) {
           gap: 12,
         }}>
           <button
+            aria-label="Abrir navegacion"
             onClick={() => { setOpen(true); setMargin(true, true) }}
             style={{
-              width: 36, height: 36, borderRadius: 8,
+              width: 38, height: 38, borderRadius: 10,
               background: 'var(--surface)',
               border: '1px solid var(--border)',
-              cursor: 'pointer', fontSize: 16,
+              cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'var(--text)', flexShrink: 0,
             }}
+            type="button"
           >
-            ☰
+            <MenuIcon />
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <div style={{
-              width: 28, height: 28, borderRadius: 6,
+              width: 30, height: 30, borderRadius: 9,
               background: 'var(--cyan)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontFamily: 'var(--font-display)',
-              fontSize: 12, fontWeight: 700, color: 'var(--bg)',
+              fontSize: 12, fontWeight: 900, color: 'var(--bg)',
+              flexShrink: 0,
             }}>V</div>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 15, fontWeight: 600, color: 'var(--text)',
-            }}>
-              Vexor
-            </span>
+            <div style={{ minWidth: 0 }}>
+              <p style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 15, fontWeight: 800, color: 'var(--text)',
+                lineHeight: 1.1,
+              }}>
+                Vexor
+              </p>
+              <p style={{
+                fontSize: 11,
+                color: 'var(--muted)',
+              }}>
+                Navegacion
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      <Sidebar user={user} open={open} onToggle={handleToggle} mobile={mobile} />
+      <Sidebar
+        user={user}
+        open={open}
+        onToggle={handleToggle}
+        mobile={mobile}
+        onNavigate={closeMobile}
+      />
     </>
   )
 }
