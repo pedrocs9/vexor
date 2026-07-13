@@ -486,6 +486,22 @@ const [filterStock, setFilterStock]       = useState<string>('all')
           ⬆️ Importar CSV
         </button>
         <button
+          onClick={() =>
+            window.open(`/api/products/export?tenantId=${tenantId}`, "_blank")
+          }
+          style={{
+            padding: "10px 16px",
+            background: "transparent",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            color: "var(--muted)",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          ⬇️ Exportar Excel
+        </button>
+        <button
           onClick={() => setShowForm(true)}
           style={{
             padding: "10px 20px",

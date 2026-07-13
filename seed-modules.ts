@@ -21,6 +21,7 @@ const MODULES = [
   { module: 'reports',         price: '5'  },
   { module: 'cash',            price: '3'  },
   { module: 'users',           price: '3'  },
+  { module: 'sii', price: '10' },
 ]
 
 async function seed() {

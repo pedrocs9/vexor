@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import ThemeToggle from './theme-toggle'
+import GlobalSearch from './global-search'
 
 const NAV = [
   {
@@ -20,6 +21,7 @@ const NAV = [
       { label: 'Cierre de caja', href: '/dashboard/caja',    icon: '🏧', roles: ['admin', 'cajero'],  module: 'cash' },
       { label: 'Deudas',         href: '/dashboard/deudas',  icon: '📋', roles: ['admin', 'cajero'],  module: 'debts' },
       { label: 'Clientes',       href: '/dashboard/clientes',icon: '👤', roles: ['admin', 'cajero'],  module: 'customers' },
+      { label: 'Boleta SII', href: '/dashboard/sii', icon: '🧾', roles: ['admin'], module: 'sii' },
     ],
   },
   {
@@ -283,7 +285,17 @@ export default function Sidebar({ user, open, onToggle, mobile }: {
           </span>
         </div>
       )}
-
+      {/* Búsqueda global */}
+      {!collapsed && (
+        <div style={{ padding: "8px 8px 0" }}>
+          <GlobalSearch tenantId={user.tenantId} collapsed={false} />
+        </div>
+      )}
+      {collapsed && (
+        <div style={{ padding: "4px 8px 0" }}>
+          <GlobalSearch tenantId={user.tenantId} collapsed={true} />
+        </div>
+      )}
       {/* Nav */}
       <nav style={{ flex: 1, padding: "8px", overflowY: "auto" }}>
         {filteredNav.map((item) => {

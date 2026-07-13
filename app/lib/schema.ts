@@ -157,6 +157,7 @@ export const tenantSettings = pgTable('tenant_settings', {
   businessName: text('business_name'),
   rut:         text('rut'),
   address:     text('address'),
+  currency: text('currency').default('CLP'),
   phone:       text('phone'),
   email:       text('email'),
   commune:     text('commune'),

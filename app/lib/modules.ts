@@ -14,6 +14,7 @@ export const MODULE_ROUTES: Record<string, string> = {
   '/dashboard/reportes':      'reports',
   '/dashboard/caja':          'cash',
   '/dashboard/usuarios':      'users',
+  '/dashboard/sii': 'sii',
 }
 
 export async function getTenantModules(tenantId: number): Promise<string[]> {
