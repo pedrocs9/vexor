@@ -79,6 +79,9 @@ export const sales = pgTable('sales', {
   paymentMethod: paymentEnum('payment_method').notNull().default('cash'),
   status:        saleEnum('sale_status').notNull().default('completed'),
   note:          text('note'),
+  voidedAt:      timestamp('voided_at'),
+  voidedBy:      integer('voided_by').references(() => users.id),
+  voidReason:    text('void_reason'),
   createdAt:     timestamp('created_at').defaultNow(),
 })
 

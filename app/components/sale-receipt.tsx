@@ -52,6 +52,28 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#64748b',
   },
+  internalReceipt: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: '#0EA5E9',
+    marginTop: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  voidedBanner: {
+    marginBottom: 12,
+    padding: '8px 10px',
+    borderRadius: 4,
+    backgroundColor: '#fee2e2',
+  },
+  voidedText: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    color: '#b91c1c',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   sectionTitle: {
     fontSize: 9,
     fontFamily: 'Helvetica-Bold',
@@ -214,6 +236,7 @@ function ReceiptDocument({ sale, items, settings, customer }: {
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1 }}>
             {settings?.logoUrl && (
+              // eslint-disable-next-line jsx-a11y/alt-text
               <Image src={settings.logoUrl} style={styles.logo} />
             )}
             <View style={styles.businessInfo}>
@@ -243,8 +266,20 @@ function ReceiptDocument({ sale, items, settings, customer }: {
                 hour: '2-digit', minute: '2-digit',
               })}
             </Text>
+            <Text style={styles.internalReceipt}>Comprobante interno</Text>
           </View>
         </View>
+
+        {sale.status === 'cancelled' && (
+          <View style={styles.voidedBanner}>
+            <Text style={styles.voidedText}>Venta anulada</Text>
+            {sale.voidedAt && (
+              <Text style={styles.footerText}>
+                Anulada el {new Date(sale.voidedAt).toLocaleString('es-CL')}
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Cliente */}
         {customer && (
@@ -300,8 +335,16 @@ function ReceiptDocument({ sale, items, settings, customer }: {
           </Text>
         </View>
 
+        {sale.paymentMethod === 'fiado' && (
+          <View style={styles.paymentBadge}>
+            <Text style={styles.paymentLabel}>Condicion</Text>
+            <Text style={styles.paymentValue}>Venta fiada</Text>
+          </View>
+        )}
+
         {/* Footer */}
         <View style={styles.footer}>
+          <Text style={styles.footerText}>Comprobante interno - no valido como boleta tributaria.</Text>
           <Text style={styles.footerText}>¡Gracias por su compra!</Text>
           <Text style={styles.footerBrand}>Powered by Vexor · pgstudio.tech</Text>
         </View>
@@ -324,7 +367,7 @@ export async function generateReceipt(sale: any, items: any[], settings: any, cu
   const url = URL.createObjectURL(blob)
   const a   = document.createElement('a')
   a.href     = url
-  a.download = `boleta-${sale.id}.pdf`
+  a.download = `comprobante-interno-${sale.id}.pdf`
   a.click()
   URL.revokeObjectURL(url)
 }

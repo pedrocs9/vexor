@@ -62,7 +62,8 @@ export type CartPanelProps = {
   total: number;
   discountAmount: number;
   totalWithDiscount: number;
-  success: boolean;
+  completedSale: CompletedSaleSummary | null;
+  onNewSale: () => void;
   isMobile: boolean;
   setShowPayment: (open: boolean) => void;
   setShowHistory: (open: boolean) => void;
@@ -75,6 +76,22 @@ export type PaymentOption = {
   value: PaymentMethod;
   label: string;
   icon: string;
+};
+
+export type CompletedSaleSummary = {
+  saleId?: number;
+  total: number;
+  paymentMethod: PaymentMethod;
+  cashReceived: number | null;
+  change: number;
+  customerName?: string;
+  itemCount: number;
+  isCreditSale: boolean;
+};
+
+export type SaleSuccessViewProps = {
+  sale: CompletedSaleSummary;
+  onNewSale: () => void;
 };
 
 export type PaymentCustomer = {
@@ -108,6 +125,7 @@ export type SaleHistoryItem = {
   id: number;
   total: string | number;
   status: string;
+  voidedAt?: string | Date | null;
   createdAt: string | Date;
   items: Array<{
     productName: string | null;
@@ -122,6 +140,7 @@ export type SalesHistoryDialogProps = {
   loading: boolean;
   deleteSale: SaleHistoryItem | null;
   deleteLoading: boolean;
+  generatingPdfSaleId: number | null;
   onClose: () => void;
   onGeneratePdf: (sale: SaleHistoryItem) => void | Promise<void>;
   onRequestDelete: (sale: SaleHistoryItem) => void;

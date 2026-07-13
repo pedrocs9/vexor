@@ -27,7 +27,8 @@ export default async function CajaPage() {
       .orderBy(desc(cashClosings.date)),
   ])
 
-  const todaySales = allSales.filter(s =>
+  const validSales = allSales.filter(s => s.status !== 'cancelled')
+  const todaySales = validSales.filter(s =>
     new Date(s.createdAt!) >= today
   )
 

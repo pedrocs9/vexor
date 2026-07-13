@@ -2,6 +2,7 @@
 "use client";
 
 import QuickCustomerDialog from "./quick-customer-dialog";
+import SaleSuccessView from "./sale-success-view";
 import type { CartPanelProps } from "./types";
 
 export default function CartPanel({
@@ -30,7 +31,8 @@ export default function CartPanel({
   total,
   discountAmount,
   totalWithDiscount,
-  success,
+  completedSale,
+  onNewSale,
   isMobile,
   setShowPayment,
   setShowHistory,
@@ -522,21 +524,8 @@ export default function CartPanel({
       </div>
 
       <div style={{ flexShrink: 0, padding: "0 18px", paddingBottom: isMobile ? 16 : 20, background: "var(--bg2)" }}>
-        {success ? (
-          <div
-            style={{
-              padding: "18px",
-              borderRadius: 10,
-              background: "rgba(16,185,129,0.1)",
-              border: "1px solid var(--success)",
-              textAlign: "center",
-              color: "var(--success)",
-              fontSize: 15,
-              fontWeight: 600,
-            }}
-          >
-            Venta registrada
-          </div>
+        {completedSale ? (
+          <SaleSuccessView sale={completedSale} onNewSale={onNewSale} />
         ) : (
           <button
             onClick={() => setShowPayment(true)}

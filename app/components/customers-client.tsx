@@ -585,6 +585,7 @@ export default function CustomersClient({ customers }: {
                           </span>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <Badge variant="info">{paymentLabels[sale.paymentMethod] ?? sale.paymentMethod}</Badge>
+                            {sale.status === 'cancelled' && <Badge variant="neutral">Anulada</Badge>}
                             <span className="activity-total">{money(Number(sale.total))}</span>
                           </div>
                         </div>

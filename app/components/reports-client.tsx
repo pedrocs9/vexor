@@ -19,6 +19,7 @@ export default function ReportsClient({ sales, items, products }: {
 
   const now = new Date()
   const filteredSales = sales.filter(s => {
+    if (s.status === 'cancelled') return false
     if (period === 9999) return true
     const date = new Date(s.createdAt)
     if (period === 0) return date.toDateString() === now.toDateString()

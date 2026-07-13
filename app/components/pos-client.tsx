@@ -11,7 +11,7 @@ import { useBarcodeScanner } from "./pos/use-barcode-scanner";
 import { usePosKeyboard } from "./pos/use-pos-keyboard";
 import { notify } from "./toast";
 import ConfirmDialog from "./ui/confirm-dialog";
-import type { CartItem, NewCustomerDraft, PaymentMethod, PaymentOption, PosCustomer, SaleHistoryItem } from "./pos/types";
+import type { CartItem, CompletedSaleSummary, NewCustomerDraft, PaymentMethod, PaymentOption, PosCustomer, SaleHistoryItem } from "./pos/types";
 
 const PAYMENT_METHODS: PaymentOption[] = [
   { value: "cash", label: "Efectivo", icon: "💵" },
@@ -56,12 +56,14 @@ export default function PosClient({
   const [loading, setLoading] = useState(false);
   const [paymentSubmitError, setPaymentSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [completedSale, setCompletedSale] = useState<CompletedSaleSummary | null>(null);
   const [showClearSaleConfirm, setShowClearSaleConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [todaySales, setTodaySales] = useState<SaleHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [deleteSale, setDeleteSale] = useState<SaleHistoryItem | null>(null);
   const [deleteSaleLoading, setDeleteSaleLoading] = useState(false);
+  const [generatingPdfSaleId, setGeneratingPdfSaleId] = useState<number | null>(null);
   const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
   const [isMobile, setIsMobile] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -185,7 +187,7 @@ export default function PosClient({
       );
   };
 
-  const clearCart = useCallback(() => {
+  const resetSaleState = useCallback((options?: { keepCompletedSale?: boolean }) => {
     setCart([]);
     setDiscountInput("");
     setCashReceived("");
@@ -199,8 +201,13 @@ export default function PosClient({
     setNewCustomer({ name: "", phone: "", rut: "" });
     setNewCustomerError(null);
     setSuccess(false);
+    if (!options?.keepCompletedSale) setCompletedSale(null);
     if (!isMobile) searchRef.current?.focus();
   }, [isMobile]);
+
+  const clearCart = useCallback(() => {
+    resetSaleState();
+  }, [resetSaleState]);
 
   async function loadHistory() {
     setLoadingHistory(true);
@@ -214,18 +221,45 @@ export default function PosClient({
   async function handleDeleteSale() {
     if (!deleteSale) return;
     setDeleteSaleLoading(true);
-    await fetch(`/api/sales/${deleteSale.id}`, {
-      method: "DELETE",
-    });
-    setDeleteSaleLoading(false);
-    setDeleteSale(null);
-    loadHistory();
+    try {
+      const response = await fetch(`/api/sales/${deleteSale.id}/void`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Anulada desde historial POS" }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || "void-sale-failed");
+      }
+
+      notify.success("Venta anulada correctamente.");
+      setDeleteSale(null);
+      await loadHistory();
+    } catch (error) {
+      const rawMessage = error instanceof Error ? error.message : "";
+      const message = rawMessage && rawMessage !== "void-sale-failed"
+        ? rawMessage
+        : "No pudimos anular la venta. No se realizaron cambios.";
+      notify.error(message);
+    } finally {
+      setDeleteSaleLoading(false);
+    }
   }
 
   async function handleGenerateSalePdf(sale: SaleHistoryItem) {
-    const res = await fetch(`/api/sales/${sale.id}`);
-    const data = await res.json();
-    await generateReceipt(data.sale, data.items, data.settings, data.customer);
+    if (generatingPdfSaleId === sale.id) return;
+    setGeneratingPdfSaleId(sale.id);
+    try {
+      const res = await fetch(`/api/sales/${sale.id}`);
+      if (!res.ok) throw new Error("receipt-fetch-failed");
+      const data = await res.json();
+      await generateReceipt(data.sale, data.items, data.settings, data.customer);
+    } catch {
+      notify.error("No pudimos generar el comprobante. Intentalo nuevamente.");
+    } finally {
+      setGeneratingPdfSaleId(null);
+    }
   }
 
   async function handleNewCustomer() {
@@ -300,11 +334,23 @@ export default function PosClient({
         throw new Error("sale-post-failed");
       }
 
+      const result = await response.json();
+      setCompletedSale({
+        saleId: result?.saleId,
+        total: totalWithDiscount,
+        paymentMethod,
+        cashReceived: paymentMethod === "cash" ? Number(cashReceived) : null,
+        change: paymentMethod === "cash" ? Math.max(change, 0) : 0,
+        customerName: selectedCustomer?.name,
+        itemCount: cart.length,
+        isCreditSale: paymentMethod === "fiado",
+      });
       setSuccess(true);
       setShowPayment(false);
-      setTimeout(() => clearCart(), 2000);
+      notify.success("Venta registrada correctamente.");
+      window.setTimeout(() => resetSaleState({ keepCompletedSale: true }), 2000);
     } catch {
-      const message = "No se pudo registrar la venta. Revisa la conexión e intenta nuevamente.";
+      const message = "No pudimos registrar la venta. Tu carrito se conserva para que puedas intentarlo nuevamente.";
       setPaymentSubmitError(message);
       notify.error(message);
     } finally {
@@ -326,6 +372,10 @@ export default function PosClient({
     if (loading) return;
     setShowPayment(false);
     setPaymentSubmitError(null);
+  }
+
+  function handleNewSale() {
+    resetSaleState();
   }
 
   function handleSelectCustomerForCreditSale() {
@@ -514,7 +564,8 @@ export default function PosClient({
             total={total}
             discountAmount={discountAmount}
             totalWithDiscount={totalWithDiscount}
-            success={success}
+            completedSale={completedSale}
+            onNewSale={handleNewSale}
             isMobile={isMobile}
             setShowPayment={(open) => {
               if (open) setPaymentSubmitError(null);
@@ -570,6 +621,7 @@ export default function PosClient({
         loading={loadingHistory}
         deleteSale={deleteSale}
         deleteLoading={deleteSaleLoading}
+        generatingPdfSaleId={generatingPdfSaleId}
         onClose={() => setShowHistory(false)}
         onGeneratePdf={handleGenerateSalePdf}
         onRequestDelete={setDeleteSale}

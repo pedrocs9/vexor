@@ -33,7 +33,8 @@ export default async function DashboardPage() {
       .where(eq(tenantSettings.tenantId, tenantId)),
   ])
 
-  const todaySales = allSales.filter(s =>
+  const validSales = allSales.filter(s => s.status !== 'cancelled')
+  const todaySales = validSales.filter(s =>
     new Date(s.createdAt!) >= today
   )
 
@@ -54,6 +55,11 @@ export default async function DashboardPage() {
   const paymentLabels: any = {
     cash: 'Efectivo', debit: 'Debito',
     credit: 'Credito', transfer: 'Transferencia',
+  }
+  const saleStatusLabels: any = {
+    completed: 'Completada',
+    credit: 'Fiado',
+    cancelled: 'Anulada',
   }
 
   return (
@@ -619,8 +625,8 @@ export default async function DashboardPage() {
                       </td>
                       <td data-label="Pago">{paymentLabels[s.paymentMethod] ?? s.paymentMethod}</td>
                       <td data-label="Estado">
-                        <Badge className="dashboard-badge" variant={s.status === 'completed' ? 'success' : 'warning'}>
-                          {s.status === 'completed' ? 'Completada' : 'Fiado'}
+                        <Badge className="dashboard-badge" variant={s.status === 'completed' ? 'success' : s.status === 'cancelled' ? 'neutral' : 'warning'}>
+                          {saleStatusLabels[s.status] ?? s.status}
                         </Badge>
                       </td>
                     </tr>

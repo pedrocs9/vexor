@@ -1,10 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '../../../lib/db'
 import { sales, saleItems, products } from '../../../lib/schema'
 import { eq, desc } from 'drizzle-orm'
+import { auth } from '../../../lib/auth'
 
-export async function GET(req: NextRequest) {
-  const tenantId = req.nextUrl.searchParams.get('tenantId')
+export async function GET() {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json([], { status: 401 })
+
+  const user = session.user as { tenantId?: number }
+  const tenantId = Number(user.tenantId)
   if (!tenantId) return NextResponse.json([])
 
   const today = new Date()

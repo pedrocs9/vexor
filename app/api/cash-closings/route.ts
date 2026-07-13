@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       .where(eq(sales.tenantId, Number(tenantId)))
 
     const filtered = todaySales.filter(s =>
+      s.status !== 'cancelled' &&
       new Date(s.createdAt!) >= today
     )
 

@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '../../../lib/db'
 import { sales, saleItems, products, customers, tenantSettings } from '../../../lib/schema'
-import { eq, sql } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
+import { auth } from '../../../lib/auth'
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    const user = session.user as { tenantId?: number }
     const { id } = await params
-    const [sale] = await db.select().from(sales).where(eq(sales.id, Number(id)))
+    const [sale] = await db.select().from(sales)
+      .where(and(eq(sales.id, Number(id)), eq(sales.tenantId, Number(user.tenantId))))
     if (!sale) return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
 
     const items = await db.select({
@@ -39,28 +47,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id } = await params
-
-    const items = await db.select().from(saleItems)
-      .where(eq(saleItems.saleId, Number(id)))
-
-    for (const item of items) {
-      if (item.productId) {
-        await db.update(products)
-          .set({ stock: sql`stock + ${item.qty}` })
-          .where(eq(products.id, item.productId))
-      }
-    }
-
-    await db.delete(saleItems).where(eq(saleItems.saleId, Number(id)))
-    await db.delete(sales).where(eq(sales.id, Number(id)))
-
-    return NextResponse.json({ ok: true })
-  } catch (error) {
-    return NextResponse.json({ error: 'Error al eliminar' }, { status: 500 })
-  }
+  await params
+  return NextResponse.json(
+    { error: 'Usa POST /api/sales/[id]/void para anular ventas.' },
+    { status: 405 }
+  )
 }

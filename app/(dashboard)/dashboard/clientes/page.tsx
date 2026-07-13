@@ -26,7 +26,7 @@ export default async function ClientesPage() {
   ])
 
   const customersWithStats = allCustomers.map(c => {
-    const cSales   = allSales.filter(s => s.customerId === c.id)
+    const cSales   = allSales.filter(s => s.customerId === c.id && s.status !== 'cancelled')
     const cDebts   = allDebts.filter(d => d.customerId === c.id && d.status === 'pending')
     const totalSpent  = cSales.reduce((s, sale) => s + Number(sale.total), 0)
     const totalDebt   = cDebts.reduce((s, d) => s + Number(d.balance), 0)
