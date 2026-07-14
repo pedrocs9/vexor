@@ -38,9 +38,11 @@ export default function SettingsClient({
   });
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (logoUploading) return;
     setLoading(true);
     await fetch("/api/settings", {
       method: "POST",
@@ -118,7 +120,10 @@ export default function SettingsClient({
             </div>
           )}
 
-          <ImageUpload onUpload={(url) => setForm({ ...form, logoUrl: url })} />
+          <ImageUpload
+            onUpload={(url) => setForm((current) => ({ ...current, logoUrl: url }))}
+            onUploadingChange={setLogoUploading}
+          />
 
           <p
             style={{
@@ -256,22 +261,6 @@ export default function SettingsClient({
           </div>
         </div>
       </div>
-
-      {/* <div>
-        <label style={labelStyle}>Moneda</label>
-        <select
-          style={inputStyle}
-          value={form.currency ?? "CLP"}
-          onChange={(e) => setForm({ ...form, currency: e.target.value })}
-        >
-          <option value="CLP">CLP — Peso chileno</option>
-          <option value="USD">USD — Dólar americano</option>
-          <option value="ARS">ARS — Peso argentino</option>
-          <option value="PEN">PEN — Sol peruano</option>
-        </select>
-      </div> */}
-
-      {/* Botón guardar */}
       <div
         style={{
           marginTop: 24,
@@ -296,7 +285,7 @@ export default function SettingsClient({
         )}
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || logoUploading}
           style={{
             padding: "11px 28px",
             background: "var(--cyan)",
@@ -309,7 +298,7 @@ export default function SettingsClient({
             cursor: "pointer",
           }}
         >
-          {loading ? "Guardando..." : "Guardar configuración"}
+          {logoUploading ? "Subiendo logo..." : loading ? "Guardando..." : "Guardar configuración"}
         </button>
       </div>
     </form>

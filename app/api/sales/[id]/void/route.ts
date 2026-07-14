@@ -36,73 +36,69 @@ export async function POST(
       ? body.reason.trim().slice(0, 240)
       : null
 
-    const result = await db.transaction(async (tx) => {
-      const [sale] = await tx.select().from(sales)
-        .where(and(eq(sales.id, saleId), eq(sales.tenantId, tenantId)))
+    const [sale] = await db.select().from(sales)
+      .where(and(eq(sales.id, saleId), eq(sales.tenantId, tenantId)))
 
-      if (!sale) {
-        return { status: 404, body: { error: 'Venta no encontrada' } }
+    if (!sale) {
+      return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
+    }
+
+    if (sale.status === 'cancelled') {
+      return NextResponse.json({ error: 'La venta ya fue anulada.' }, { status: 409 })
+    }
+
+    const allClosings = await db.select().from(cashClosings)
+      .where(and(eq(cashClosings.tenantId, tenantId), eq(cashClosings.status, 'closed')))
+
+    if (sale.createdAt && allClosings.some((closing) => closing.date && sameBusinessDay(new Date(closing.date), new Date(sale.createdAt!)))) {
+      return NextResponse.json({ error: 'La caja de esta fecha ya fue cerrada. La anulacion requiere revision.' }, { status: 409 })
+    }
+
+    const [saleDebt] = await db.select().from(debts)
+      .where(and(eq(debts.saleId, saleId), eq(debts.tenantId, tenantId)))
+
+    if (saleDebt) {
+      const payments = await db.select().from(debtPayments)
+        .where(eq(debtPayments.debtId, saleDebt.id))
+
+      if (payments.length > 0 || Number(saleDebt.paid) > 0) {
+        return NextResponse.json({ error: 'La venta tiene abonos asociados y requiere revision antes de anularse.' }, { status: 409 })
       }
+    }
 
-      if (sale.status === 'cancelled') {
-        return { status: 409, body: { error: 'La venta ya fue anulada.' } }
-      }
+    const [voidedSale] = await db.update(sales)
+      .set({
+        status: 'cancelled',
+        voidedAt: new Date(),
+        voidedBy: Number.isFinite(userId) ? userId : null,
+        voidReason: reason,
+      })
+      .where(and(eq(sales.id, saleId), eq(sales.tenantId, tenantId), ne(sales.status, 'cancelled')))
+      .returning()
 
-      const allClosings = await tx.select().from(cashClosings)
-        .where(and(eq(cashClosings.tenantId, tenantId), eq(cashClosings.status, 'closed')))
+    if (!voidedSale) {
+      return NextResponse.json({ error: 'La venta ya fue anulada.' }, { status: 409 })
+    }
 
-      if (sale.createdAt && allClosings.some((closing) => closing.date && sameBusinessDay(new Date(closing.date), new Date(sale.createdAt!)))) {
-        return { status: 409, body: { error: 'La caja de esta fecha ya fue cerrada. La anulacion requiere revision.' } }
-      }
+    const items = await db.select().from(saleItems)
+      .where(eq(saleItems.saleId, saleId))
 
-      const [saleDebt] = await tx.select().from(debts)
-        .where(and(eq(debts.saleId, saleId), eq(debts.tenantId, tenantId)))
+    for (const item of items) {
+      await db.update(products)
+        .set({ stock: sql`${products.stock} + ${item.qty}` })
+        .where(and(eq(products.id, item.productId), eq(products.tenantId, tenantId)))
+    }
 
-      if (saleDebt) {
-        const payments = await tx.select().from(debtPayments)
-          .where(eq(debtPayments.debtId, saleDebt.id))
-
-        if (payments.length > 0 || Number(saleDebt.paid) > 0) {
-          return { status: 409, body: { error: 'La venta tiene abonos asociados y requiere revision antes de anularse.' } }
-        }
-      }
-
-      const [voidedSale] = await tx.update(sales)
+    if (saleDebt) {
+      await db.update(debts)
         .set({
+          balance: '0',
           status: 'cancelled',
-          voidedAt: new Date(),
-          voidedBy: Number.isFinite(userId) ? userId : null,
-          voidReason: reason,
         })
-        .where(and(eq(sales.id, saleId), eq(sales.tenantId, tenantId), ne(sales.status, 'cancelled')))
-        .returning()
+        .where(and(eq(debts.id, saleDebt.id), eq(debts.tenantId, tenantId)))
+    }
 
-      if (!voidedSale) {
-        return { status: 409, body: { error: 'La venta ya fue anulada.' } }
-      }
-
-      const items = await tx.select().from(saleItems)
-        .where(eq(saleItems.saleId, saleId))
-
-      for (const item of items) {
-        await tx.update(products)
-          .set({ stock: sql`${products.stock} + ${item.qty}` })
-          .where(and(eq(products.id, item.productId), eq(products.tenantId, tenantId)))
-      }
-
-      if (saleDebt) {
-        await tx.update(debts)
-          .set({
-            balance: '0',
-            status: 'cancelled',
-          })
-          .where(and(eq(debts.id, saleDebt.id), eq(debts.tenantId, tenantId)))
-      }
-
-      return { status: 200, body: { ok: true, sale: voidedSale } }
-    })
-
-    return NextResponse.json(result.body, { status: result.status })
+    return NextResponse.json({ ok: true, sale: voidedSale })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: 'No pudimos anular la venta. No se realizaron cambios.' }, { status: 500 })

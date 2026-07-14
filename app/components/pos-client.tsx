@@ -331,7 +331,8 @@ export default function PosClient({
       });
 
       if (!response.ok) {
-        throw new Error("sale-post-failed");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "sale-post-failed");
       }
 
       const result = await response.json();
@@ -349,8 +350,11 @@ export default function PosClient({
       setShowPayment(false);
       notify.success("Venta registrada correctamente.");
       window.setTimeout(() => resetSaleState({ keepCompletedSale: true }), 2000);
-    } catch {
-      const message = "No pudimos registrar la venta. Tu carrito se conserva para que puedas intentarlo nuevamente.";
+    } catch (error) {
+      const rawMessage = error instanceof Error ? error.message : "";
+      const message = rawMessage && rawMessage !== "sale-post-failed"
+        ? rawMessage
+        : "No pudimos registrar la venta. Tu carrito se conserva para que puedas intentarlo nuevamente.";
       setPaymentSubmitError(message);
       notify.error(message);
     } finally {

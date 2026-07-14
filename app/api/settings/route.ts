@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   const [settings] = await db.select().from(tenantSettings)
     .where(eq(tenantSettings.tenantId, Number(tenantId)))
 
-  return NextResponse.json(settings ?? null)
+  return NextResponse.json(settings ? { ...settings, currency: 'CLP' } : null)
 }
 
 export async function POST(req: NextRequest) {
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
           commune:      body.commune      || null,
           city:         body.city         || null,
           website:      body.website      || null,
+          currency:     'CLP',
           updatedAt:    new Date(),
         })
         .where(eq(tenantSettings.tenantId, Number(tenantId)))
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
         commune:      body.commune      || null,
         city:         body.city         || null,
         website:      body.website      || null,
+        currency:     'CLP',
       })
     }
 

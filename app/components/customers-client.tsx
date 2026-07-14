@@ -4,10 +4,12 @@
 import { useState } from 'react'
 import Badge from './ui/badge'
 import Button from './ui/button'
+import ConfirmDialog from './ui/confirm-dialog'
 import EmptyState from './ui/empty-state'
 import Modal from './ui/modal'
 import PageHeader from './ui/page-header'
 import Surface from './ui/surface'
+import { notify } from './toast'
 
 const inputStyle: any = {
   padding: '10px 14px',
@@ -54,6 +56,8 @@ export default function CustomersClient({ customers }: {
   const [editForm, setEditForm]           = useState<any>(null)
   const [editLoading, setEditLoading]     = useState(false)
   const [activeTab, setActiveTab]         = useState<'sales' | 'debts'>('sales')
+  const [deleteCustomer, setDeleteCustomer] = useState<any>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const filtered = customers.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -87,6 +91,26 @@ export default function CustomersClient({ customers }: {
     setEditLoading(false)
     setEditMode(false)
     window.location.reload()
+  }
+
+  async function handleDeleteCustomer() {
+    if (!deleteCustomer) return
+    setDeleteLoading(true)
+    const res = await fetch(`/api/customers/${deleteCustomer.id}`, {
+      method: 'DELETE',
+    })
+    const data = await res.json().catch(() => ({}))
+    setDeleteLoading(false)
+
+    if (res.ok) {
+      notify.success('Cliente eliminado correctamente')
+      setDeleteCustomer(null)
+      setSelected(null)
+      setDetail(null)
+      window.location.reload()
+    } else {
+      notify.error(data?.error || 'No pudimos eliminar el cliente')
+    }
   }
 
   return (
@@ -444,9 +468,14 @@ export default function CustomersClient({ customers }: {
                       </td>
                       <td className="col-last-sale">{c.lastSale ? new Date(c.lastSale).toLocaleDateString('es-CL') : '-'}</td>
                       <td>
-                        <Button type="button" variant="secondary" onClick={() => loadDetail(c)}>
-                          Ver detalle
-                        </Button>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <Button type="button" variant="secondary" onClick={() => loadDetail(c)}>
+                            Ver detalle
+                          </Button>
+                          <Button type="button" variant="danger" onClick={() => setDeleteCustomer(c)}>
+                            Eliminar
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -482,9 +511,12 @@ export default function CustomersClient({ customers }: {
                       <p className="mobile-value">{c.lastSale ? new Date(c.lastSale).toLocaleDateString('es-CL') : '-'}</p>
                     </div>
                   </div>
-                  <div className="customer-mobile-actions">
+                  <div className="customer-mobile-actions" style={{ gap: 8 }}>
                     <Button type="button" variant="secondary" onClick={() => loadDetail(c)}>
                       Ver detalle
+                    </Button>
+                    <Button type="button" variant="danger" onClick={() => setDeleteCustomer(c)}>
+                      Eliminar
                     </Button>
                   </div>
                 </article>
@@ -502,13 +534,16 @@ export default function CustomersClient({ customers }: {
           size="wide"
           footer={null}
         >
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
             <Button
               type="button"
               variant="secondary"
               onClick={() => { setEditMode(true); setEditForm({ name: selected.name, phone: selected.phone ?? '', rut: selected.rut ?? '' }) }}
             >
               Editar
+            </Button>
+            <Button type="button" variant="danger" onClick={() => setDeleteCustomer(selected)}>
+              Eliminar
             </Button>
           </div>
 
@@ -644,6 +679,25 @@ export default function CustomersClient({ customers }: {
           )}
         </Modal>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteCustomer)}
+        title="Eliminar cliente"
+        description="Esta accion eliminara el cliente del listado si no tiene historial asociado."
+        cancelLabel="Cancelar"
+        confirmLabel="Eliminar"
+        variant="danger"
+        loading={deleteLoading}
+        onCancel={() => {
+          if (deleteLoading) return
+          setDeleteCustomer(null)
+        }}
+        onConfirm={handleDeleteCustomer}
+      >
+        <p>
+          Cliente: <strong style={{ color: 'var(--text)' }}>{deleteCustomer?.name}</strong>. Si tiene compras o deudas registradas, el sistema conservara el cliente para proteger el historial.
+        </p>
+      </ConfirmDialog>
     </div>
   )
 }

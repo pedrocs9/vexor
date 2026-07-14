@@ -56,3 +56,42 @@ export async function PATCH(
 
   return NextResponse.json({ ok: true })
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const customerId = Number(id)
+
+    const [customer] = await db.select().from(customers)
+      .where(eq(customers.id, customerId))
+
+    if (!customer) {
+      return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    }
+
+    const [customerSale] = await db.select({ id: sales.id }).from(sales)
+      .where(eq(sales.customerId, customerId))
+      .limit(1)
+
+    const [customerDebt] = await db.select({ id: debts.id }).from(debts)
+      .where(eq(debts.customerId, customerId))
+      .limit(1)
+
+    if (customerSale || customerDebt) {
+      return NextResponse.json({
+        error: 'No se puede eliminar un cliente con compras o deudas asociadas',
+      }, { status: 409 })
+    }
+
+    await db.delete(customers)
+      .where(eq(customers.id, customerId))
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error(error)
+    return NextResponse.json({ error: 'Error al eliminar cliente' }, { status: 500 })
+  }
+}

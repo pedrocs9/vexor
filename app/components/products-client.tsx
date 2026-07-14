@@ -59,10 +59,12 @@ function FormFields({
   data,
   onChange,
   categories,
+  onImageUploadingChange,
 }: {
   data: any;
-  onChange: (d: any) => void;
+  onChange: React.Dispatch<React.SetStateAction<any>>;
   categories: any[];
+  onImageUploadingChange?: (uploading: boolean) => void;
 }) {
   return (
     <>
@@ -189,7 +191,12 @@ function FormFields({
               className="product-form-image"
             />
           )}
-          <ImageUpload onUpload={(url) => onChange({ ...data, imageUrl: url })} />
+          <ImageUpload
+            onUpload={(url) =>
+              onChange((current: any) => ({ ...current, imageUrl: url }))
+            }
+            onUploadingChange={onImageUploadingChange}
+          />
         </div>
       </section>
     </>
@@ -206,6 +213,7 @@ function Modal({
   categories,
   submitLabel,
   isLoading,
+  isImageUploading,
 }: any) {
   return (
     <div className="inventory-modal-backdrop">
@@ -225,12 +233,23 @@ function Modal({
           </button>
         </div>
         <form onSubmit={onSubmit} className="inventory-modal-body">
-          <FormFields data={data} onChange={onChange} categories={categories} />
+          <FormFields
+            data={data}
+            onChange={onChange}
+            categories={categories}
+            onImageUploadingChange={isImageUploading?.onChange}
+          />
           <div className="inventory-modal-footer">
             <button type="button" onClick={onClose} className="btn-secondary">
               Cancelar
             </button>
-            <Button type="submit" isLoading={isLoading} loadingText="Guardando" variant="primary">
+            <Button
+              type="submit"
+              disabled={isImageUploading?.value}
+              isLoading={isLoading || isImageUploading?.value}
+              loadingText={isImageUploading?.value ? "Subiendo imagen" : "Guardando"}
+              variant="primary"
+            >
               {submitLabel}
             </Button>
           </div>
@@ -252,10 +271,12 @@ export default function ProductsClient({
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [editProduct, setEditProduct] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
   const [editLoading, setEditLoading] = useState(false);
+  const [editImageUploading, setEditImageUploading] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
   const [adjustProduct, setAdjustProduct] = useState<any>(null);
@@ -338,6 +359,10 @@ export default function ProductsClient({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (imageUploading) {
+      notify.error("Espera a que termine de subir la imagen");
+      return;
+    }
     setLoading(true);
     const res = await fetch("/api/products", {
       method: "POST",
@@ -357,6 +382,10 @@ export default function ProductsClient({
 
   async function handleEdit(e: React.FormEvent) {
     e.preventDefault();
+    if (editImageUploading) {
+      notify.error("Espera a que termine de subir la imagen");
+      return;
+    }
     setEditLoading(true);
     const res = await fetch(`/api/products/${editProduct.id}`, {
       method: "PATCH",
@@ -1489,6 +1518,7 @@ export default function ProductsClient({
           categories={categories}
           submitLabel="Guardar producto"
           isLoading={loading}
+          isImageUploading={{ value: imageUploading, onChange: setImageUploading }}
         />
       )}
 
@@ -1503,6 +1533,7 @@ export default function ProductsClient({
           categories={categories}
           submitLabel="Guardar cambios"
           isLoading={editLoading}
+          isImageUploading={{ value: editImageUploading, onChange: setEditImageUploading }}
         />
       )}
 

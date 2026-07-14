@@ -12,16 +12,16 @@ const MODULES = [
   { module: 'pos',             price: '0'  },
   { module: 'inventory',       price: '0'  },
   { module: 'dashboard',       price: '0'  },
-  { module: 'suppliers',       price: '3'  },
-  { module: 'purchases',       price: '5'  },
-  { module: 'customers',       price: '3'  },
-  { module: 'debts',           price: '5'  },
-  { module: 'bread',           price: '3'  },
-  { module: 'containers',      price: '3'  },
-  { module: 'reports',         price: '5'  },
-  { module: 'cash',            price: '3'  },
-  { module: 'users',           price: '3'  },
-  { module: 'sii', price: '10' },
+  { module: 'suppliers',       price: '3000'  },
+  { module: 'purchases',       price: '5000'  },
+  { module: 'customers',       price: '3000'  },
+  { module: 'debts',           price: '5000'  },
+  { module: 'bread',           price: '3000'  },
+  { module: 'containers',      price: '3000'  },
+  { module: 'reports',         price: '5000'  },
+  { module: 'cash',            price: '3000'  },
+  { module: 'users',           price: '3000'  },
+  { module: 'sii', price: '10000' },
 ]
 
 async function seed() {
@@ -43,8 +43,8 @@ async function seed() {
     await db.insert(schema.tenantSubscriptions).values({
       tenantId:    tenant.id,
       status:      'active',
-      basePrice:   '15',
-      totalPrice:  '15',
+      basePrice:   '15000',
+      totalPrice:  '15000',
       billingDay:  1,
       nextBilling: new Date(new Date().setMonth(new Date().getMonth() + 1)),
     }).onConflictDoNothing()
