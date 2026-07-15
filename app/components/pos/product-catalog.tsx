@@ -23,6 +23,15 @@ function SearchIcon() {
   );
 }
 
+function getProductInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "P";
+}
+
 export default function ProductCatalog({
   products,
   categories,
@@ -169,37 +178,50 @@ export default function ProductCatalog({
               cursor: "pointer",
               textAlign: "left",
               overflow: "hidden",
+              minHeight: isMobile ? 154 : 212,
+              display: "flex",
+              flexDirection: "column",
+              color: "var(--text)",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--cyan)")}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
           >
-            {p.imageUrl ? (
-              <img
-                src={p.imageUrl}
-                alt={p.name}
-                style={{
-                  width: "100%",
-                  height: isMobile ? 74 : 112,
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  height: isMobile ? 74 : 112,
-                  background: "var(--bg2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 24,
-                }}
-              >
-                Sin imagen
-              </div>
-            )}
-            <div style={{ padding: "8px 10px" }}>
+            <div
+              style={{
+                width: "100%",
+                height: isMobile ? 76 : 112,
+                background: "linear-gradient(135deg, rgba(14,165,233,0.12), rgba(16,185,129,0.10)), var(--bg2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--cyan-l)",
+                fontFamily: "var(--font-display)",
+                fontSize: isMobile ? 20 : 26,
+                fontWeight: 850,
+                flexShrink: 0,
+                position: "relative",
+              }}
+            >
+              {getProductInitials(p.name)}
+              {p.imageUrl && (
+                <img
+                  src={p.imageUrl}
+                  alt={p.name}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              )}
+            </div>
+            <div style={{ padding: "8px 10px 10px", flex: 1, display: "flex", flexDirection: "column" }}>
               <p
                 style={{
                   fontSize: isMobile ? 12 : 13,
@@ -218,7 +240,7 @@ export default function ProductCatalog({
               <p style={{ fontSize: isMobile ? 13 : 15, fontWeight: 850, color: "var(--cyan)" }}>
                 ${Number(p.price).toLocaleString("es-CL")}
               </p>
-              <p style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+              <p style={{ fontSize: 10, color: "var(--muted)", marginTop: "auto", paddingTop: 4 }}>
                 Stock: {Number(p.stock)} {p.unit}
               </p>
             </div>
