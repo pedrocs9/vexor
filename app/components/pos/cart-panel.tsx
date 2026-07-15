@@ -56,13 +56,13 @@ export default function CartPanel({
         flexDirection: "column",
         background: "color-mix(in srgb, var(--bg2) 94%, var(--surface))",
         overflow: "hidden",
-        height: isMobile ? "calc(100dvh - 56px)" : "100dvh",
+        height: isMobile ? "calc(100dvh - 112px - env(safe-area-inset-bottom))" : "100dvh",
         borderLeft: isMobile ? "none" : "1px solid var(--border)",
       }}
     >
       <div
         style={{
-          padding: "16px 18px",
+          padding: isMobile ? "14px 18px 12px" : "16px 18px",
           borderBottom: "1px solid var(--border)",
           display: "flex",
           justifyContent: "space-between",
@@ -253,7 +253,7 @@ export default function CartPanel({
       <div
         style={{
           flexShrink: 0,
-          padding: "14px 18px 18px",
+          padding: isMobile ? "12px 18px" : "14px 18px 18px",
           borderTop: "1px solid var(--border)",
           background: "var(--bg2)",
           boxShadow: "0 -16px 36px rgba(0,0,0,0.18)",
@@ -264,7 +264,7 @@ export default function CartPanel({
             <p style={{ fontSize: 12, color: "var(--muted)", fontWeight: 800, marginBottom: 2 }}>
               Cliente
             </p>
-            <p style={{ fontSize: 11, color: "var(--muted)" }}>Opcional para ventas normales.</p>
+            {!isMobile && <p style={{ fontSize: 11, color: "var(--muted)" }}>Opcional para ventas normales.</p>}
           </div>
           {!selectedCustomer && customerSearch && (
             <button
@@ -469,7 +469,7 @@ export default function CartPanel({
       <div
         style={{
           flexShrink: 0,
-          padding: "0 18px 14px",
+          padding: isMobile ? "0 18px 10px" : "0 18px 14px",
           background: "var(--bg2)",
         }}
       >
@@ -515,15 +515,15 @@ export default function CartPanel({
             {discountError}
           </p>
         )}
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid var(--border)" }}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 700, color: "var(--text)" }}>Total</span>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 32, fontWeight: 900, color: "var(--cyan)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", padding: isMobile ? "6px 0" : "8px 0", borderTop: "1px solid var(--border)" }}>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: isMobile ? 16 : 17, fontWeight: 700, color: "var(--text)" }}>Total</span>
+          <span style={{ fontFamily: "var(--font-display)", fontSize: isMobile ? 28 : 32, fontWeight: 900, color: "var(--cyan)" }}>
             ${totalWithDiscount.toLocaleString("es-CL")}
           </span>
         </div>
       </div>
 
-      <div style={{ flexShrink: 0, padding: "0 18px", paddingBottom: isMobile ? 16 : 20, background: "var(--bg2)" }}>
+      <div style={{ flexShrink: 0, padding: "0 18px", paddingBottom: isMobile ? 12 : 20, background: "var(--bg2)" }}>
         {completedSale ? (
           <SaleSuccessView sale={completedSale} onNewSale={onNewSale} />
         ) : (
@@ -532,8 +532,8 @@ export default function CartPanel({
             disabled={cart.length === 0 || saleLocked || Boolean(discountError)}
             style={{
               width: "100%",
-              minHeight: 56,
-              padding: "16px",
+              minHeight: isMobile ? 50 : 56,
+              padding: isMobile ? "13px 16px" : "16px",
               background: cart.length === 0 || discountError ? "var(--surface)" : "var(--cyan)",
               color: cart.length === 0 || discountError ? "var(--muted)" : "var(--bg)",
               border: "none",
